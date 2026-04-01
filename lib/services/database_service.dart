@@ -37,6 +37,7 @@ class DatabaseService {
         await db.execute('''
           CREATE TABLE meal_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
             food_class_name TEXT NOT NULL,
             food_display_name TEXT NOT NULL,
             total_calories REAL NOT NULL,
@@ -87,16 +88,24 @@ class DatabaseService {
   }
 
   // ── Log a meal ────────────────────────────────
-  Future<void> logMeal(MealLog log) async {
+  Future<void> logMeal(MealLog log, {required String userId}) async {
     final db = await database;
-    await db.insert('meal_logs', log.toMap());
+    await db.insert('meal_logs', {
+      ...log.toMap(),
+      'user_id': userId,
+    });
   }
 
   // ── Get meal history ──────────────────────────
-  Future<List<MealLog>> getMealHistory({int limit = 20}) async {
+  Future<List<MealLog>> getMealHistory({
+    required String userId,
+    int limit = 20,
+  }) async {
     final db   = await database;
     final rows = await db.query(
       'meal_logs',
+      where: 'user_id = ?',
+      whereArgs: [userId],
       orderBy: 'logged_at DESC',
       limit: limit,
     );
@@ -111,6 +120,7 @@ class DatabaseService {
       loggedAt:         DateTime.parse(r['logged_at'] as String),
     )).toList();
   }
+
 
   // ── Fallback for unknown classes ──────────────
   List<Ingredient> _fallbackIngredients(String className) => [

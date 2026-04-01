@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
 import '../models/models.dart';
+import '../services/auth_service.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 
@@ -29,6 +30,7 @@ class NutritionScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<AppColors>()!;
     final db     = context.read<DatabaseService>();
+    final auth   = context.read<AuthService>();
 
     final totalMacroG = totalProtein + totalCarbs + totalFat;
     final protPct = totalMacroG > 0 ? totalProtein / totalMacroG : 0.0;
@@ -84,7 +86,6 @@ class NutritionScreen extends StatelessWidget {
                       color: Colors.white70, fontSize: 16,
                     )),
                   const SizedBox(height: 20),
-                  // Mini macro pills
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -160,21 +161,17 @@ class NutritionScreen extends StatelessWidget {
                   Expanded(
                     child: Column(
                       children: [
-                        _MacroRow('Protein',  totalProtein,
-                            const Color(0xFF4CAF50)),
+                        _MacroRow('Protein', totalProtein, const Color(0xFF4CAF50)),
                         const SizedBox(height: 16),
-                        _MacroRow('Carbs',    totalCarbs,
-                            AppTheme.accent),
+                        _MacroRow('Carbs',   totalCarbs,   AppTheme.accent),
                         const SizedBox(height: 16),
-                        _MacroRow('Fat',      totalFat,
-                            AppTheme.primary),
+                        _MacroRow('Fat',     totalFat,     AppTheme.primary),
                       ],
                     ),
                   ),
                 ],
               ),
-            ).animate().fadeIn(delay: 150.ms, duration: 400.ms)
-                        .slideY(begin: 0.1),
+            ).animate().fadeIn(delay: 150.ms, duration: 400.ms).slideY(begin: 0.1),
 
             const SizedBox(height: 24),
 
@@ -203,22 +200,39 @@ class NutritionScreen extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () async {
-                  await db.logMeal(MealLog(
-                    foodClassName:   prediction.className,
-                    foodDisplayName: prediction.displayName,
-                    totalCalories:   totalCalories,
-                    totalProtein:    totalProtein,
-                    totalCarbs:      totalCarbs,
-                    totalFat:        totalFat,
-                    loggedAt:        DateTime.now(),
-                  ));
+                  final userId = auth.currentUserId;
+                  if (userId == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Please sign in to log meals.',
+                          style: GoogleFonts.dmSans(fontWeight: FontWeight.w600)),
+                        backgroundColor: Colors.red,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                    );
+                    return;
+                  }
+
+                  await db.logMeal(
+                    MealLog(
+                      foodClassName:   prediction.className,
+                      foodDisplayName: prediction.displayName,
+                      totalCalories:   totalCalories,
+                      totalProtein:    totalProtein,
+                      totalCarbs:      totalCarbs,
+                      totalFat:        totalFat,
+                      loggedAt:        DateTime.now(),
+                    ),
+                    userId: userId,
+                  );
+
                   if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(
-                        '✅ Meal logged successfully!',
-                        style: GoogleFonts.dmSans(fontWeight: FontWeight.w600),
-                      ),
+                      content: Text('✅ Meal logged successfully!',
+                        style: GoogleFonts.dmSans(fontWeight: FontWeight.w600)),
                       backgroundColor: AppTheme.primary,
                       behavior: SnackBarBehavior.floating,
                       shape: RoundedRectangleBorder(
@@ -242,7 +256,7 @@ class NutritionScreen extends StatelessWidget {
   }
 }
 
-// ── Macro pill (inside hero card) ────────────
+// ── Macro pill ────────────────────────────────
 class _MacroPill extends StatelessWidget {
   final String label;
   final double value;
@@ -257,16 +271,14 @@ class _MacroPill extends StatelessWidget {
         color: Colors.white.withOpacity(0.15),
         borderRadius: BorderRadius.circular(30),
       ),
-      child: Text(
-        '$label  ${value.toStringAsFixed(1)}g',
+      child: Text('$label  ${value.toStringAsFixed(1)}g',
         style: GoogleFonts.dmSans(
-          fontSize: 13, color: color, fontWeight: FontWeight.w600),
-      ),
+          fontSize: 13, color: color, fontWeight: FontWeight.w600)),
     );
   }
 }
 
-// ── Macro row with label, value and bar ──────
+// ── Macro row ─────────────────────────────────
 class _MacroRow extends StatelessWidget {
   final String label;
   final double grams;
@@ -276,36 +288,30 @@ class _MacroRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<AppColors>()!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(children: [
-              Container(
-                width: 10, height: 10,
-                decoration: BoxDecoration(
-                  color: color, shape: BoxShape.circle),
-              ),
-              const SizedBox(width: 8),
-              Text(label,
-                style: GoogleFonts.dmSans(
-                  fontSize: 13, color: colors.textSecondary,
-                  fontWeight: FontWeight.w500)),
-            ]),
-            Text('${grams.toStringAsFixed(1)}g',
-              style: GoogleFonts.dmSans(
-                fontSize: 13, color: colors.textPrimary,
-                fontWeight: FontWeight.w700)),
-          ],
-        ),
+        Row(children: [
+          Container(
+            width: 10, height: 10,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 8),
+          Text(label,
+            style: GoogleFonts.dmSans(
+              fontSize: 13, color: colors.textSecondary,
+              fontWeight: FontWeight.w500)),
+        ]),
+        Text('${grams.toStringAsFixed(1)}g',
+          style: GoogleFonts.dmSans(
+            fontSize: 13, color: colors.textPrimary,
+            fontWeight: FontWeight.w700)),
       ],
     );
   }
 }
 
-// ── Per-ingredient nutrition row ─────────────
+// ── Per-ingredient nutrition row ──────────────
 class _IngredientNutrRow extends StatelessWidget {
   final Ingredient ing;
   final AppColors colors;

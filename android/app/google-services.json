@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "448880362653",
+    "project_id": "smartdzmeal",
+    "storage_bucket": "smartdzmeal.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:448880362653:android:3c6e08527493928ae48074",
+        "android_client_info": {
+          "package_name": "com.example.flutter_application_1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDRHl8F1pNyKPZs2UJHQmwIdbXo_-B1HIc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
