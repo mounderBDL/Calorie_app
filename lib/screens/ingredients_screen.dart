@@ -375,12 +375,79 @@ class _AddIngredientSheet extends StatefulWidget {
 }
 
 class _AddIngredientSheetState extends State<_AddIngredientSheet> {
-  final _nameCtrl  = TextEditingController();
-  final _gramsCtrl = TextEditingController(text: '100');
-  final _calCtrl   = TextEditingController();
-  final _protCtrl  = TextEditingController();
-  final _carbCtrl  = TextEditingController();
-  final _fatCtrl   = TextEditingController();
+  final _searchCtrl = TextEditingController();
+  final _gramsCtrl  = TextEditingController(text: '100');
+
+  // Manual entry controllers
+  final _nameCtrl   = TextEditingController();
+  final _calCtrl    = TextEditingController();
+  final _protCtrl   = TextEditingController();
+  final _carbCtrl   = TextEditingController();
+  final _fatCtrl    = TextEditingController();
+
+  List<Ingredient> _searchResults = [];
+  Ingredient? _selected;
+  bool _showManual = false;
+  bool _isSearching = false;
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    _gramsCtrl.dispose();
+    _nameCtrl.dispose();
+    _calCtrl.dispose();
+    _protCtrl.dispose();
+    _carbCtrl.dispose();
+    _fatCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _search(String query) async {
+    if (query.trim().isEmpty) {
+      setState(() { _searchResults = []; _isSearching = false; });
+      return;
+    }
+    setState(() => _isSearching = true);
+
+    final db      = context.read<DatabaseService>();
+    final results = await db.searchIngredients(query.trim());
+
+    if (mounted) {
+      setState(() {
+        _searchResults = results;
+        _isSearching   = false;
+      });
+    }
+  }
+
+  void _selectIngredient(Ingredient ing) {
+    setState(() {
+      _selected      = ing;
+      _searchResults = [];
+      _searchCtrl.text = ing.name;
+    });
+  }
+
+  void _confirmAdd() {
+    if (_selected != null) {
+      final grams = double.tryParse(_gramsCtrl.text) ?? 100.0;
+      widget.onAdd(_selected!.copyWith(grams: grams));
+      Navigator.pop(context);
+      return;
+    }
+
+    // Manual entry fallback
+    if (_nameCtrl.text.trim().isEmpty) return;
+    widget.onAdd(Ingredient(
+      name:     _nameCtrl.text.trim(),
+      calories: double.tryParse(_calCtrl.text)  ?? 0,
+      protein:  double.tryParse(_protCtrl.text) ?? 0,
+      carbs:    double.tryParse(_carbCtrl.text) ?? 0,
+      fat:      double.tryParse(_fatCtrl.text)  ?? 0,
+      grams:    double.tryParse(_gramsCtrl.text) ?? 100,
+    ));
+    Navigator.pop(context);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -393,80 +460,317 @@ class _AddIngredientSheetState extends State<_AddIngredientSheet> {
       ),
       padding: EdgeInsets.fromLTRB(
           22, 20, 22, MediaQuery.of(context).viewInsets.bottom + 22),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 36, height: 4,
-              decoration: BoxDecoration(
-                color: colors.divider,
-                borderRadius: BorderRadius.circular(2),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Handle
+            Center(
+              child: Container(
+                width: 36, height: 4,
+                decoration: BoxDecoration(
+                  color: colors.divider,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 20),
-          Text('Add Ingredient',
-            style: GoogleFonts.playfairDisplay(
-              fontSize: 22, fontWeight: FontWeight.w700,
-              color: colors.textPrimary,
-            )),
-          const SizedBox(height: 18),
-          _field(_nameCtrl, 'Ingredient name', context),
-          const SizedBox(height: 10),
-          Row(children: [
-            Expanded(child: _field(_gramsCtrl, 'Grams', context,
-                isNumber: true)),
-            const SizedBox(width: 10),
-            Expanded(child: _field(_calCtrl, 'Calories/100g', context,
-                isNumber: true)),
-          ]),
-          const SizedBox(height: 10),
-          Row(children: [
-            Expanded(child: _field(_protCtrl, 'Protein/100g', context,
-                isNumber: true)),
-            const SizedBox(width: 10),
-            Expanded(child: _field(_carbCtrl, 'Carbs/100g', context,
-                isNumber: true)),
-            const SizedBox(width: 10),
-            Expanded(child: _field(_fatCtrl, 'Fat/100g', context,
-                isNumber: true)),
-          ]),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                if (_nameCtrl.text.isEmpty) return;
-                widget.onAdd(Ingredient(
-                  name:     _nameCtrl.text,
-                  calories: double.tryParse(_calCtrl.text)  ?? 0,
-                  protein:  double.tryParse(_protCtrl.text) ?? 0,
-                  carbs:    double.tryParse(_carbCtrl.text) ?? 0,
-                  fat:      double.tryParse(_fatCtrl.text)  ?? 0,
-                  grams:    double.tryParse(_gramsCtrl.text) ?? 100,
-                ));
-                Navigator.pop(context);
-              },
-              child: const Text('Add Ingredient'),
+            const SizedBox(height: 18),
+
+            // Title
+            Text('Add Ingredient',
+              style: GoogleFonts.playfairDisplay(
+                fontSize: 22, fontWeight: FontWeight.w700,
+                color: colors.textPrimary)),
+
+            const SizedBox(height: 6),
+            Text(
+              _showManual
+                  ? 'Enter details manually'
+                  : 'Search our database or add manually',
+              style: GoogleFonts.dmSans(
+                  fontSize: 13, color: colors.textSecondary)),
+
+            const SizedBox(height: 18),
+
+            if (!_showManual) ...[
+              // ── Search mode ─────────────────
+              // Search bar
+              TextField(
+                controller: _searchCtrl,
+                autofocus: true,
+                onChanged: _search,
+                style: GoogleFonts.dmSans(
+                    fontSize: 15, color: colors.textPrimary),
+                decoration: InputDecoration(
+                  hintText: 'Search ingredients...',
+                  hintStyle: GoogleFonts.dmSans(fontSize: 14),
+                  prefixIcon: const Icon(Icons.search_rounded,
+                      color: AppTheme.primary, size: 22),
+                  suffixIcon: _searchCtrl.text.isNotEmpty
+                      ? IconButton(
+                          icon: Icon(Icons.clear_rounded,
+                              size: 18, color: colors.textSecondary),
+                          onPressed: () {
+                            _searchCtrl.clear();
+                            setState(() {
+                              _searchResults = [];
+                              _selected = null;
+                            });
+                          },
+                        )
+                      : null,
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 14),
+                ),
+              ),
+
+              // Loading indicator
+              if (_isSearching)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Center(
+                    child: SizedBox(
+                      width: 20, height: 20,
+                      child: CircularProgressIndicator(
+                          color: AppTheme.primary, strokeWidth: 2),
+                    ),
+                  ),
+                ),
+
+              // Search results
+              if (_searchResults.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Container(
+                  constraints: const BoxConstraints(maxHeight: 200),
+                  decoration: BoxDecoration(
+                    color: colors.card,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: colors.divider),
+                  ),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: _searchResults.length,
+                    separatorBuilder: (_, __) =>
+                        Divider(height: 1, color: colors.divider),
+                    itemBuilder: (_, i) {
+                      final ing = _searchResults[i];
+                      return ListTile(
+                        dense: true,
+                        title: Text(ing.name,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 14, fontWeight: FontWeight.w600,
+                            color: colors.textPrimary)),
+                        subtitle: Text(
+                          '${ing.calories.toStringAsFixed(0)} kcal · '
+                          'P ${ing.protein.toStringAsFixed(1)}g · '
+                          'C ${ing.carbs.toStringAsFixed(1)}g · '
+                          'F ${ing.fat.toStringAsFixed(1)}g',
+                          style: GoogleFonts.dmSans(
+                              fontSize: 11, color: colors.textSecondary)),
+                        trailing: const Icon(Icons.add_circle_rounded,
+                            color: AppTheme.primary, size: 22),
+                        onTap: () => _selectIngredient(ing),
+                      );
+                    },
+                  ),
+                ),
+              ],
+
+              // No results message
+              if (_searchCtrl.text.isNotEmpty &&
+                  !_isSearching &&
+                  _searchResults.isEmpty &&
+                  _selected == null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Column(
+                    children: [
+                      Icon(Icons.search_off_rounded,
+                          size: 32,
+                          color: colors.textSecondary.withOpacity(0.4)),
+                      const SizedBox(height: 8),
+                      Text('No results for "${_searchCtrl.text}"',
+                        style: GoogleFonts.dmSans(
+                            fontSize: 13, color: colors.textSecondary)),
+                      const SizedBox(height: 4),
+                      GestureDetector(
+                        onTap: () => setState(() => _showManual = true),
+                        child: Text('Add it manually →',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 13, color: AppTheme.primary,
+                            fontWeight: FontWeight.w700)),
+                      ),
+                    ],
+                  ),
+                ),
+
+              // Selected ingredient confirmation
+              if (_selected != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary.withOpacity(0.06),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                        color: AppTheme.primary.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle_rounded,
+                          color: AppTheme.primary, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(_selected!.name,
+                              style: GoogleFonts.dmSans(
+                                fontSize: 14, fontWeight: FontWeight.w700,
+                                color: colors.textPrimary)),
+                            Text(
+                              '${_selected!.calories.toStringAsFixed(0)} kcal/100g',
+                              style: GoogleFonts.dmSans(
+                                  fontSize: 12,
+                                  color: colors.textSecondary)),
+                          ],
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => setState(() {
+                          _selected = null;
+                          _searchCtrl.clear();
+                        }),
+                        child: Icon(Icons.close_rounded,
+                            size: 18, color: colors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              // Portion input (shown when ingredient selected)
+              if (_selected != null) ...[
+                const SizedBox(height: 14),
+                Text('Portion size',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 13, fontWeight: FontWeight.w600,
+                    color: colors.textSecondary)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _gramsCtrl,
+                        keyboardType: TextInputType.number,
+                        style: GoogleFonts.dmSans(
+                            fontSize: 15, color: colors.textPrimary),
+                        decoration: InputDecoration(
+                          hintText: '100',
+                          suffixText: 'g',
+                          prefixIcon: const Icon(
+                              Icons.scale_rounded,
+                              color: AppTheme.primary, size: 20),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 14),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+
+              const SizedBox(height: 16),
+
+              // Manual entry toggle (only shown when no results / not searching)
+              if (_selected == null &&
+                  _searchResults.isEmpty &&
+                  _searchCtrl.text.isEmpty)
+                Center(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _showManual = true),
+                    child: Text('+ Add ingredient manually',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 13, color: AppTheme.primary,
+                        fontWeight: FontWeight.w600)),
+                  ),
+                ),
+            ] else ...[
+              // ── Manual entry mode ────────────
+              GestureDetector(
+                onTap: () => setState(() => _showManual = false),
+                child: Row(
+                  children: [
+                    Icon(Icons.arrow_back_rounded,
+                        size: 16, color: AppTheme.primary),
+                    const SizedBox(width: 4),
+                    Text('Back to search',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 13, color: AppTheme.primary,
+                        fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              _field(_nameCtrl,  'Ingredient name', context, isNumber: false),
+              const SizedBox(height: 10),
+              Row(children: [
+                Expanded(child: _field(_gramsCtrl, 'Grams',       context, isNumber: true)),
+                const SizedBox(width: 10),
+                Expanded(child: _field(_calCtrl,   'Cal/100g',    context, isNumber: true)),
+              ]),
+              const SizedBox(height: 10),
+              Row(children: [
+                Expanded(child: _field(_protCtrl,  'Protein/100g', context, isNumber: true)),
+                const SizedBox(width: 6),
+                Expanded(child: _field(_carbCtrl,  'Carbs/100g',   context, isNumber: true)),
+                const SizedBox(width: 6),
+                Expanded(child: _field(_fatCtrl,   'Fat/100g',     context, isNumber: true)),
+              ]),
+            ],
+
+            const SizedBox(height: 20),
+
+            // Add button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: (_selected != null ||
+                        (_showManual && _nameCtrl.text.isNotEmpty))
+                    ? _confirmAdd
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                ),
+                child: Text(
+                  _showManual ? 'Add Ingredient' : 'Add to Meal',
+                  style: GoogleFonts.dmSans(
+                      fontSize: 15, fontWeight: FontWeight.w700)),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _field(TextEditingController ctrl, String label,
       BuildContext context, {bool isNumber = false}) {
+    final colors = Theme.of(context).extension<AppColors>()!;
     return TextFormField(
       controller: ctrl,
       keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-      style: GoogleFonts.dmSans(fontSize: 14),
+      style: GoogleFonts.dmSans(fontSize: 14, color: colors.textPrimary),
+      onChanged: (_) => setState(() {}),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: GoogleFonts.dmSans(fontSize: 13),
+        labelStyle: GoogleFonts.dmSans(fontSize: 12),
         isDense: true,
+        contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12, vertical: 12),
       ),
     );
   }
