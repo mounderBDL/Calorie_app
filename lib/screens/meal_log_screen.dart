@@ -6,6 +6,8 @@ import '../models/models.dart';
 import '../services/auth_service.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
+import 'nutrition_screen.dart';
+import '../services/database_service.dart';
 
 class MealLogScreen extends StatefulWidget {
   const MealLogScreen({super.key});
@@ -256,68 +258,107 @@ class _MealLogCard extends StatelessWidget {
     final time = '${log.loggedAt.hour.toString().padLeft(2, '0')}:'
         '${log.loggedAt.minute.toString().padLeft(2, '0')}';
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colors.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colors.divider),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44, height: 44,
-            decoration: BoxDecoration(
-              color: AppTheme.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+    return GestureDetector(
+      onTap: () => _openNutrition(context),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: colors.card,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: colors.divider),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44, height: 44,
+              decoration: BoxDecoration(
+                color: AppTheme.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.restaurant_rounded,
+                  color: AppTheme.primary, size: 22),
             ),
-            child: const Icon(Icons.restaurant_rounded,
-                color: AppTheme.primary, size: 22),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(log.foodDisplayName,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 14, fontWeight: FontWeight.w600,
+                      color: colors.textPrimary)),
+                  const SizedBox(height: 4),
+                  Row(children: [
+                    _MacroChip('P ${log.totalProtein.toStringAsFixed(0)}g',
+                        const Color(0xFF4CAF50)),
+                    const SizedBox(width: 4),
+                    _MacroChip('C ${log.totalCarbs.toStringAsFixed(0)}g',
+                        AppTheme.accent),
+                    const SizedBox(width: 4),
+                    _MacroChip('F ${log.totalFat.toStringAsFixed(0)}g',
+                        AppTheme.primary),
+                  ]),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(log.foodDisplayName,
-                  style: GoogleFonts.dmSans(
-                    fontSize: 14, fontWeight: FontWeight.w600,
+                Text('${log.totalCalories.toStringAsFixed(0)}',
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 18, fontWeight: FontWeight.w700,
                     color: colors.textPrimary)),
-                const SizedBox(height: 4),
+                Text('kcal',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 11, color: colors.textSecondary)),
+                const SizedBox(height: 2),
                 Row(children: [
-                  _MacroChip('P ${log.totalProtein.toStringAsFixed(0)}g',
-                      const Color(0xFF4CAF50)),
+                  Text(time,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 11, color: colors.textSecondary)),
                   const SizedBox(width: 4),
-                  _MacroChip('C ${log.totalCarbs.toStringAsFixed(0)}g',
-                      AppTheme.accent),
-                  const SizedBox(width: 4),
-                  _MacroChip('F ${log.totalFat.toStringAsFixed(0)}g',
-                      AppTheme.primary),
+                  Icon(Icons.chevron_right_rounded,
+                      size: 14, color: colors.textSecondary),
                 ]),
               ],
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text('${log.totalCalories.toStringAsFixed(0)}',
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 18, fontWeight: FontWeight.w700,
-                  color: colors.textPrimary)),
-              Text('kcal',
-                style: GoogleFonts.dmSans(
-                  fontSize: 11, color: colors.textSecondary)),
-              const SizedBox(height: 2),
-              Text(time,
-                style: GoogleFonts.dmSans(
-                  fontSize: 11, color: colors.textSecondary)),
-            ],
-          ),
-        ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openNutrition(BuildContext context) async {
+    // Reload ingredients for this food from the database
+    final db          = context.read<DatabaseService>();
+    final ingredients = await db.getIngredientsForFood(log.foodClassName);
+
+    if (!context.mounted) return;
+
+    // Build a PredictionResult from the log
+    final prediction = PredictionResult(
+      className:      log.foodClassName,
+      displayName:    log.foodDisplayName,
+      confidence:     1.0,
+      topPredictions: [],
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => NutritionScreen(
+          prediction:     prediction,
+          ingredients:    ingredients,
+          totalCalories:  log.totalCalories,
+          totalProtein:   log.totalProtein,
+          totalCarbs:     log.totalCarbs,
+          totalFat:       log.totalFat,
+        ),
       ),
     );
   }
 }
+
 
 class _MacroChip extends StatelessWidget {
   final String label;

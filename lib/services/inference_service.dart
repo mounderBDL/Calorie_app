@@ -49,6 +49,57 @@ class InferenceService {
     'white_sauce_pasta':   'White Sauce Pasta',
   };
 
+  static const Map<String, String> servingNotes = {
+    // Algerian
+    'Bourek':             '2 pieces (~200g)',
+    'KoftaFinal':         '3 skewers (~200g)',
+    'chourba':            '1 medium bowl (~350g)',
+    'couscous':           '1 medium plate (~450g)',
+
+    // Salads
+    'caesar_salad':       '1 serving (~250g)',
+    'greek_salad':        '1 serving (~250g)',
+
+    // Meat & poultry
+    'hamburger':          '1 burger (~200g)',
+    'hot_dog':            '1 hot dog (~150g)',
+    'steak':              '1 fillet (~200g)',
+    'tacos':              '2 tacos (~160g)',
+    'chicken_curry':      '1 serving with rice (~350g)',
+    'chicken_quesadilla': '1 quesadilla (~200g)',
+
+    // Seafood
+    'grilled_salmon':     '1 fillet (~200g)',
+    'mussels':            '1 serving (~300g)',
+    'fish_and_chips':     '1 serving (~350g)',
+    'paella':             '1 serving (~350g)',
+
+    // Pasta & rice
+    'lasagna':            '1 slice (~300g)',
+    'red_sauce_pasta':    '1 plate (~300g)',
+    'white_sauce_pasta':  '1 plate (~300g)',
+    'fried_rice':         '1 plate (~300g)',
+    'rice_dishes':        '1 medium bowl (~250g)',
+    'ramen':              '1 bowl (~400g)',
+
+    // Breakfast
+    'pancakes':           '2 pancakes (~150g)',
+    'omelette':           '1 omelette (~150g)',
+
+    // Fast food & sides
+    'pizza':              '1 slice (~120g)',
+    'french_fries':       '1 medium serving (~150g)',
+    'garlic_bread':       '2 slices (~80g)',
+    'hummus':             '1 serving with bread (~120g)',
+    'falafel':            '4 pieces (~120g)',
+
+    // Desserts
+    'cheesecake':         '1 slice (~120g)',
+    'chocolate_cake':     '1 slice (~120g)',
+    'ice_cream':          '1 scoop (~100g)',
+    'baklava':            '2 pieces (~80g)',
+  };
+
   String displayName(String className) =>
       _displayNames[className] ?? _formatClassName(className);
 

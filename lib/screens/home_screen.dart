@@ -18,42 +18,111 @@ class _HomeScreenState extends State<HomeScreen> {
   final _picker = ImagePicker();
   bool _isAnalyzing = false;
 
-  Future<void> _pickAndAnalyze(ImageSource source) async {
-    final picked = await _picker.pickImage(
-      source: source,
-      imageQuality: 90,
-      maxWidth: 1080,
-    );
-    if (picked == null || !mounted) return;
+Future<void> _pickAndAnalyze(ImageSource source) async {
+  final picked = await _picker.pickImage(
+    source: source,
+    imageQuality: 90,
+    maxWidth: 1080,
+  );
+  if (picked == null || !mounted) return;
 
-    setState(() => _isAnalyzing = true);
+  setState(() => _isAnalyzing = true);
 
-    final inference = context.read<InferenceService>();
-    final result    = await inference.predict(File(picked.path));
+  final inference = context.read<InferenceService>();
+  final result    = await inference.predict(File(picked.path));
 
-    if (!mounted) return;
-    setState(() => _isAnalyzing = false);
+  if (!mounted) return;
+  setState(() => _isAnalyzing = false);
 
-    if (result != null) {
-      Navigator.push(context, PageRouteBuilder(
-        pageBuilder: (_, a1, a2) => ResultScreen(
-          imageFile: File(picked.path),
-          prediction: result,
-        ),
-        transitionsBuilder: (_, animation, __, child) => FadeTransition(
-          opacity: animation,
-          child: SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0, 0.05),
-              end: Offset.zero,
-            ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut)),
-            child: child,
-          ),
-        ),
-        transitionDuration: const Duration(milliseconds: 400),
-      ));
-    }
+  if (result == null) return;
+
+  // ── Confidence check ─────────────────────────
+  if (result.confidence < 0.60) {
+    _showLowConfidenceDialog();
+    return;
   }
+
+  Navigator.push(context, PageRouteBuilder(
+    pageBuilder: (_, a1, a2) => ResultScreen(
+      imageFile: File(picked.path),
+      prediction: result,
+    ),
+    transitionsBuilder: (_, animation, __, child) => FadeTransition(
+      opacity: animation,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 0.05),
+          end: Offset.zero,
+        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut)),
+        child: child,
+      ),
+    ),
+    transitionDuration: const Duration(milliseconds: 400),
+  ));
+}
+
+void _showLowConfidenceDialog() {
+  final colors = Theme.of(context).extension<AppColors>()!;
+  showDialog(
+    context: context,
+    builder: (_) => Dialog(
+      backgroundColor: colors.background,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72, height: 72,
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.no_food_rounded,
+                  color: Colors.orange, size: 36),
+            ).animate().scale(duration: 400.ms, curve: Curves.elasticOut),
+
+            const SizedBox(height: 18),
+
+            Text('No Food Detected',
+              style: GoogleFonts.playfairDisplay(
+                fontSize: 22, fontWeight: FontWeight.w700,
+                color: colors.textPrimary),
+            ).animate().fadeIn(delay: 150.ms),
+
+            const SizedBox(height: 10),
+
+            Text(
+              'The image doesn\'t clearly show a recognizable food item. '
+              'Try taking a closer photo with better lighting.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.dmSans(
+                fontSize: 14, color: colors.textSecondary, height: 1.5),
+            ).animate().fadeIn(delay: 200.ms),
+
+            const SizedBox(height: 24),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                ),
+                child: Text('Try Again',
+                  style: GoogleFonts.dmSans(
+                      fontSize: 15, fontWeight: FontWeight.w700)),
+              ),
+            ).animate().fadeIn(delay: 250.ms),
+          ],
+        ),
+      ),
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {

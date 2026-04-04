@@ -7,6 +7,7 @@ import '../models/models.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import 'nutrition_screen.dart';
+import '../services/inference_service.dart';
 
 class IngredientsScreen extends StatefulWidget {
   final PredictionResult prediction;
@@ -78,7 +79,7 @@ class _IngredientsScreenState extends State<IngredientsScreen> {
           // ── Live calorie summary ──────────────
           _CalorieBanner(calories: _totalCalories)
               .animate().fadeIn(duration: 400.ms),
-
+          _ServingNoteBanner(className: widget.prediction.className),          
           // ── Ingredients list ──────────────────
           Expanded(
             child: ListView.separated(
@@ -775,3 +776,55 @@ class _AddIngredientSheetState extends State<_AddIngredientSheet> {
     );
   }
 }
+
+class _ServingNoteBanner extends StatelessWidget {
+  final String className;
+  const _ServingNoteBanner({required this.className});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).extension<AppColors>()!;
+
+    // Get serving note from InferenceService
+    final note = InferenceService.servingNotes[className];
+    if (note == null) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(18, 10, 18, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppTheme.accent.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.accent.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline_rounded,
+              color: AppTheme.accent, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                style: GoogleFonts.dmSans(
+                  fontSize: 12, color: colors.textSecondary),
+                children: [
+                  const TextSpan(text: 'Default portions based on '),
+                  TextSpan(
+                    text: note,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 12,
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const TextSpan(text: '. Adjust grams as needed.'),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 400.ms);
+  }
+}
+
