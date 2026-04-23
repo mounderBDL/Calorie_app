@@ -184,7 +184,7 @@ class _CalorieBanner extends StatelessWidget {
 }
 
 // ── Ingredient card ───────────────────────────
-class _IngredientCard extends StatelessWidget {
+class _IngredientCard extends StatefulWidget {
   final Ingredient ingredient;
   final ValueChanged<double> onGramsChanged;
   final VoidCallback onRemove;
@@ -196,10 +196,28 @@ class _IngredientCard extends StatelessWidget {
   });
 
   @override
+  State<_IngredientCard> createState() => _IngredientCardState();
+}
+
+class _IngredientCardState extends State<_IngredientCard> {
+  late TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(
+        text: widget.ingredient.grams.toStringAsFixed(0));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<AppColors>()!;
-    final ctrl   = TextEditingController(
-        text: ingredient.grams.toStringAsFixed(0));
 
     return Container(
       decoration: BoxDecoration(
@@ -224,7 +242,7 @@ class _IngredientCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(ingredient.name,
+                child: Text(widget.ingredient.name,
                   style: GoogleFonts.dmSans(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
@@ -234,7 +252,7 @@ class _IngredientCard extends StatelessWidget {
               IconButton(
                 icon: Icon(Icons.remove_circle_outline_rounded,
                     color: colors.textSecondary, size: 22),
-                onPressed: onRemove,
+                onPressed: widget.onRemove,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
               ),
@@ -243,58 +261,51 @@ class _IngredientCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              // Grams input
-              Expanded(
-                child: Row(
-                  children: [
-                    Text('Portion: ',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 13,
-                        color: colors.textSecondary,
-                      )),
-                    SizedBox(
-                      width: 70,
-                      child: TextFormField(
-                        controller: ctrl,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly],
-                        style: GoogleFonts.dmSans(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.primary,
-                        ),
-                        decoration: InputDecoration(
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 8),
-                          filled: true,
-                          fillColor: AppTheme.primary.withOpacity(0.08),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                        onChanged: (v) {
-                          final grams = double.tryParse(v) ?? 0;
-                          if (grams > 0) onGramsChanged(grams);
-                        },
-                      ),
+              Text('Portion: ',
+                style: GoogleFonts.dmSans(
+                  fontSize: 13,
+                  color: colors.textSecondary,
+                )),
+              SizedBox(
+                width: 70,
+                child: TextFormField(
+                  controller: _ctrl,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly],
+                  style: GoogleFonts.dmSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.primary,
+                  ),
+                  decoration: InputDecoration(
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 8),
+                    filled: true,
+                    fillColor: AppTheme.primary.withOpacity(0.08),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
                     ),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 6),
-                      child: Text('g',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 13,
-                          color: colors.textSecondary,
-                        )),
-                    ),
-                  ],
+                  ),
+                  onChanged: (v) {
+                    final grams = double.tryParse(v) ?? 0;
+                    if (grams > 0) widget.onGramsChanged(grams);
+                  },
                 ),
               ),
-              // Calories for this ingredient
+              Padding(
+                padding: const EdgeInsets.only(left: 6),
+                child: Text('g',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 13,
+                    color: colors.textSecondary,
+                  )),
+              ),
+              const Spacer(),
               Text(
-                '${ingredient.scaledCalories.toStringAsFixed(0)} kcal',
+                '${widget.ingredient.scaledCalories.toStringAsFixed(0)} kcal',
                 style: GoogleFonts.dmSans(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,

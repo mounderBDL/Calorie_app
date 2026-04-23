@@ -5,6 +5,8 @@ import 'home_screen.dart';
 import 'meal_log_screen.dart';
 import 'settings_screen.dart';
 
+final mainScreenKey = GlobalKey<_MainScreenState>();
+
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
   @override
@@ -19,6 +21,10 @@ class _MainScreenState extends State<MainScreen> {
     MealLogScreen(),
     SettingsScreen(),
   ];
+
+  void switchToMealLog() {
+  setState(() => _currentIndex = 1);
+  }
 
   @override
   Widget build(BuildContext context) {

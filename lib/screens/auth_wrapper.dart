@@ -22,7 +22,7 @@ class AuthWrapper extends StatelessWidget {
             ),
           );
         }
-        if (snapshot.hasData) return const MainScreen();
+        if (snapshot.hasData) return MainScreen(key: mainScreenKey);
         return const LoginScreen();
       },
     );

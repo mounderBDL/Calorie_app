@@ -15,7 +15,7 @@ class InferenceService {
   // ── Friendly display names ────────────────
   static const Map<String, String> _displayNames = {
     'Bourek':              'Bourek 🇩🇿',
-    'KoftaFinal':          'Kofta 🇩🇿',        // ← fixes the display name
+    'KoftaFinal':          'Tadjine Zitoune 🇩🇿',        // ← fixes the display name
     'baklava':             'Baklava',
     'caesar_salad':        'Caesar Salad',
     'cheesecake':          'Cheesecake',

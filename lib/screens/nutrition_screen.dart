@@ -7,6 +7,7 @@ import '../models/models.dart';
 import '../services/auth_service.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
+import 'main_screen.dart';
 
 class NutritionScreen extends StatelessWidget {
   final PredictionResult prediction;
@@ -195,7 +196,7 @@ class NutritionScreen extends StatelessWidget {
 
             const SizedBox(height: 28),
 
-            // ── Log meal button ─────────────────
+            // ── Save meal button ────────────────
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
@@ -204,7 +205,7 @@ class NutritionScreen extends StatelessWidget {
                   if (userId == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Please sign in to log meals.',
+                        content: Text('Please sign in to save meals.',
                           style: GoogleFonts.dmSans(fontWeight: FontWeight.w600)),
                         backgroundColor: Colors.red,
                         behavior: SnackBarBehavior.floating,
@@ -229,19 +230,15 @@ class NutritionScreen extends StatelessWidget {
                   );
 
                   if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('✅ Meal logged successfully!',
-                        style: GoogleFonts.dmSans(fontWeight: FontWeight.w600)),
-                      backgroundColor: AppTheme.primary,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
-                  );
+
+                  // Pop all screens back to MainScreen
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+
+                  // Switch bottom nav to Meal Log tab (index 1)
+                  mainScreenKey.currentState?.switchToMealLog();
                 },
                 icon: const Icon(Icons.bookmark_add_rounded, size: 20),
-                label: const Text('Log This Meal'),
+                label: const Text('Save Meal'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 18),
                   shape: RoundedRectangleBorder(
