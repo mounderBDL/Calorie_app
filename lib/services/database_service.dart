@@ -1,9 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/models.dart';
 
 class DatabaseService {
   static Database? _db;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Future<Database> get database async {
     _db ??= await _initDatabase();
@@ -149,6 +152,50 @@ class DatabaseService {
       ...log.toMap(),
       'user_id': userId,
     });
+    // Backup to Firestore (non-blocking — local write already succeeded)
+    _firestore
+        .collection('meal_logs')
+        .doc(userId)
+        .collection('logs')
+        .add(log.toMap())
+        .then((_) {}, onError: (Object e) => debugPrint('Firestore write failed: $e'));
+  }
+
+  // ── Sync meal history from Firestore ─────────
+  Future<void> syncFromFirestore({required String userId}) async {
+    try {
+      final snapshot = await _firestore
+          .collection('meal_logs')
+          .doc(userId)
+          .collection('logs')
+          .get();
+      if (snapshot.docs.isEmpty) return;
+
+      final db = await database;
+      final localRows = await db.query(
+        'meal_logs',
+        where: 'user_id = ?',
+        whereArgs: [userId],
+        columns: ['logged_at'],
+      );
+      final localTimestamps =
+          localRows.map((r) => r['logged_at'] as String).toSet();
+
+      final batch = db.batch();
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final loggedAt = data['logged_at'] as String?;
+        if (loggedAt == null || localTimestamps.contains(loggedAt)) continue;
+        batch.insert(
+          'meal_logs',
+          {...data, 'user_id': userId},
+          conflictAlgorithm: ConflictAlgorithm.ignore,
+        );
+      }
+      await batch.commit(noResult: true);
+    } catch (e) {
+      debugPrint('Firestore sync failed: $e');
+    }
   }
 
   // ── Get meal history ──────────────────────────

@@ -1,5 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import 'home_screen.dart';
 import 'meal_log_screen.dart';
@@ -21,6 +24,15 @@ class _MainScreenState extends State<MainScreen> {
     MealLogScreen(),
     SettingsScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId != null) {
+      context.read<DatabaseService>().syncFromFirestore(userId: userId);
+    }
+  }
 
   void switchToMealLog() {
   setState(() => _currentIndex = 1);
