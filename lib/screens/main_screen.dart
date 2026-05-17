@@ -34,62 +34,79 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  void switchToMealLog() {
-  setState(() => _currentIndex = 1);
-  }
+  void switchToMealLog() => setState(() => _currentIndex = 1);
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).extension<AppColors>()!;
-    final isDark  = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
       ),
-      bottomNavigationBar: Container(
+      bottomNavigationBar: _FloatingNavBar(
+        currentIndex: _currentIndex,
+        onTap: (i) => setState(() => _currentIndex = i),
+      ),
+    );
+  }
+}
+
+// ── Floating pill navigation bar ──────────────
+class _FloatingNavBar extends StatelessWidget {
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+
+  const _FloatingNavBar({
+    required this.currentIndex,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).extension<AppColors>()!;
+
+    return Container(
+      color: colors.background,
+      padding: EdgeInsets.fromLTRB(
+          24, 8, 24, MediaQuery.of(context).padding.bottom + 12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         decoration: BoxDecoration(
-          color: colors.background,
-          border: Border(top: BorderSide(color: colors.divider, width: 1)),
+          color: colors.card,
+          borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
-              blurRadius: 20,
-              offset: const Offset(0, -4),
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 30,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _NavItem(
-                  icon: Icons.camera_alt_rounded,
-                  activeIcon: Icons.camera_alt_rounded,
-                  label: 'Scan',
-                  isActive: _currentIndex == 0,
-                  onTap: () => setState(() => _currentIndex = 0),
-                ),
-                _NavItem(
-                  icon: Icons.receipt_long_outlined,
-                  activeIcon: Icons.receipt_long_rounded,
-                  label: 'Meal Log',
-                  isActive: _currentIndex == 1,
-                  onTap: () => setState(() => _currentIndex = 1),
-                ),
-                _NavItem(
-                  icon: Icons.person_outline_rounded,
-                  activeIcon: Icons.person_rounded,
-                  label: 'Profile',
-                  isActive: _currentIndex == 2,
-                  onTap: () => setState(() => _currentIndex = 2),
-                ),
-              ],
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _NavItem(
+              icon: Icons.camera_alt_outlined,
+              activeIcon: Icons.camera_alt_rounded,
+              label: 'Scan',
+              isActive: currentIndex == 0,
+              onTap: () => onTap(0),
             ),
-          ),
+            _NavItem(
+              icon: Icons.receipt_long_outlined,
+              activeIcon: Icons.receipt_long_rounded,
+              label: 'Meal Log',
+              isActive: currentIndex == 1,
+              onTap: () => onTap(1),
+            ),
+            _NavItem(
+              icon: Icons.person_outline_rounded,
+              activeIcon: Icons.person_rounded,
+              label: 'Profile',
+              isActive: currentIndex == 2,
+              onTap: () => onTap(2),
+            ),
+          ],
         ),
       ),
     );
@@ -113,36 +130,45 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).extension<AppColors>()!;
-
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
           color: isActive
-              ? AppTheme.primary.withOpacity(0.1)
+              ? AppTheme.primary.withValues(alpha: 0.12)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(22),
         ),
-        child: Column(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               isActive ? activeIcon : icon,
-              color: isActive ? AppTheme.primary : colors.textSecondary,
-              size: 24,
+              color: isActive
+                  ? AppTheme.primary
+                  : Theme.of(context)
+                      .extension<AppColors>()!
+                      .textSecondary,
+              size: 22,
             ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: GoogleFonts.dmSans(
-                fontSize: 11,
-                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                color: isActive ? AppTheme.primary : colors.textSecondary,
-              ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              child: isActive
+                  ? Row(children: [
+                      const SizedBox(width: 8),
+                      Text(label,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.primary,
+                        )),
+                    ])
+                  : const SizedBox.shrink(),
             ),
           ],
         ),

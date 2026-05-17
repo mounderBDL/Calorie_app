@@ -198,6 +198,68 @@ class DatabaseService {
     }
   }
 
+  // ── Delete a meal log ─────────────────────────
+  Future<void> deleteMealLog({
+    required int id,
+    required String loggedAt,
+    required String userId,
+  }) async {
+    final db = await database;
+    await db.delete('meal_logs', where: 'id = ?', whereArgs: [id]);
+    _firestore
+        .collection('meal_logs')
+        .doc(userId)
+        .collection('logs')
+        .where('logged_at', isEqualTo: loggedAt)
+        .get()
+        .then((snap) {
+          for (final doc in snap.docs) {
+            doc.reference.delete();
+          }
+        }, onError: (Object e) => debugPrint('Firestore delete failed: $e'));
+  }
+
+  // ── Update a meal log ─────────────────────────
+  Future<void> updateMealLog({
+    required int id,
+    required String oldLoggedAt,
+    required String userId,
+    required MealLog updatedLog,
+  }) async {
+    final db = await database;
+    await db.update(
+      'meal_logs',
+      {
+        'food_class_name':   updatedLog.foodClassName,
+        'food_display_name': updatedLog.foodDisplayName,
+        'total_calories':    updatedLog.totalCalories,
+        'total_protein':     updatedLog.totalProtein,
+        'total_carbs':       updatedLog.totalCarbs,
+        'total_fat':         updatedLog.totalFat,
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    _firestore
+        .collection('meal_logs')
+        .doc(userId)
+        .collection('logs')
+        .where('logged_at', isEqualTo: oldLoggedAt)
+        .get()
+        .then((snap) {
+          for (final doc in snap.docs) {
+            doc.reference.update({
+              'food_class_name':   updatedLog.foodClassName,
+              'food_display_name': updatedLog.foodDisplayName,
+              'total_calories':    updatedLog.totalCalories,
+              'total_protein':     updatedLog.totalProtein,
+              'total_carbs':       updatedLog.totalCarbs,
+              'total_fat':         updatedLog.totalFat,
+            });
+          }
+        }, onError: (Object e) => debugPrint('Firestore update failed: $e'));
+  }
+
   // ── Get meal history ──────────────────────────
   Future<List<MealLog>> getMealHistory({
     required String userId,

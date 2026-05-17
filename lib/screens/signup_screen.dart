@@ -44,7 +44,6 @@ class _SignupScreenState extends State<SignupScreen> {
         name:     _nameCtrl.text,
       );
       if (!mounted) return;
-      // Show success dialog
       await _showSuccessDialog();
     } on FirebaseAuthException catch (e) {
       setState(() {
@@ -69,11 +68,10 @@ class _SignupScreenState extends State<SignupScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Animated checkmark
               Container(
                 width: 80, height: 80,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF4CAF50).withOpacity(0.1),
+                  color: const Color(0xFF4CAF50).withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.check_circle_rounded,
@@ -84,7 +82,7 @@ class _SignupScreenState extends State<SignupScreen> {
               const SizedBox(height: 20),
 
               Text('Account Created!',
-                style: GoogleFonts.playfairDisplay(
+                style: GoogleFonts.plusJakartaSans(
                   fontSize: 24, fontWeight: FontWeight.w700,
                   color: colors.textPrimary),
               ).animate().fadeIn(delay: 200.ms),
@@ -105,13 +103,12 @@ class _SignupScreenState extends State<SignupScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.pop(context); // close dialog
-                    // AuthWrapper will auto-navigate to MainScreen
+                    Navigator.pop(context);
                   },
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
+                        borderRadius: BorderRadius.circular(50)),
                   ),
                   child: Text('Get Started',
                     style: GoogleFonts.dmSans(
@@ -139,8 +136,8 @@ class _SignupScreenState extends State<SignupScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(colors: [
-                  AppTheme.accent.withOpacity(0.15),
-                  AppTheme.accent.withOpacity(0.0),
+                  AppTheme.accent.withValues(alpha: 0.15),
+                  AppTheme.accent.withValues(alpha: 0.0),
                 ]),
               ),
             ),
@@ -152,8 +149,8 @@ class _SignupScreenState extends State<SignupScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(colors: [
-                  AppTheme.primary.withOpacity(0.12),
-                  AppTheme.primary.withOpacity(0.0),
+                  AppTheme.primary.withValues(alpha: 0.12),
+                  AppTheme.primary.withValues(alpha: 0.0),
                 ]),
               ),
             ),
@@ -176,7 +173,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         decoration: BoxDecoration(
                           color: colors.card,
                           borderRadius: BorderRadius.circular(11),
-                          border: Border.all(color: colors.divider),
+                          boxShadow: AppTheme.softShadow,
                         ),
                         child: Icon(Icons.arrow_back_ios_new_rounded,
                             size: 16, color: colors.textPrimary),
@@ -186,8 +183,8 @@ class _SignupScreenState extends State<SignupScreen> {
                     const SizedBox(height: 32),
 
                     Text('Create\naccount 🍽',
-                      style: GoogleFonts.playfairDisplay(
-                        fontSize: 38, fontWeight: FontWeight.w700,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 36, fontWeight: FontWeight.w800,
                         height: 1.2, color: colors.textPrimary,
                       ),
                     ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.15),
@@ -205,10 +202,8 @@ class _SignupScreenState extends State<SignupScreen> {
                         padding: const EdgeInsets.all(14),
                         margin: const EdgeInsets.only(bottom: 16),
                         decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.08),
+                          color: Colors.red.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                              color: Colors.red.withOpacity(0.3)),
                         ),
                         child: Row(children: [
                           const Icon(Icons.error_outline_rounded,
@@ -301,8 +296,9 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                       ),
                       validator: (v) {
-                        if (v == null || v.isEmpty)
+                        if (v == null || v.isEmpty) {
                           return 'Please confirm your password';
+                        }
                         if (v != _passCtrl.text) return 'Passwords do not match';
                         return null;
                       },
@@ -317,7 +313,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 18),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16)),
+                              borderRadius: BorderRadius.circular(50)),
                         ),
                         child: _isLoading
                             ? const SizedBox(
@@ -376,7 +372,7 @@ class _SignupScreenState extends State<SignupScreen> {
       hintText: hint,
       hintStyle: GoogleFonts.dmSans(fontSize: 14),
       prefixIcon: Icon(icon, size: 20,
-          color: AppTheme.primary.withOpacity(0.7)),
+          color: AppTheme.primary.withValues(alpha: 0.7)),
       suffixIcon: suffix,
       contentPadding: const EdgeInsets.symmetric(
           horizontal: 16, vertical: 16),

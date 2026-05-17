@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -64,8 +63,6 @@ class _IngredientsScreenState extends State<IngredientsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).extension<AppColors>()!;
-
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.prediction.displayName),
@@ -76,14 +73,16 @@ class _IngredientsScreenState extends State<IngredientsScreen> {
       ),
       body: Column(
         children: [
-          // ── Live calorie summary ──────────────
+          // ── Slim sticky calorie banner ─────────
           _CalorieBanner(calories: _totalCalories)
               .animate().fadeIn(duration: 400.ms),
-          _ServingNoteBanner(className: widget.prediction.className),          
+
+          _ServingNoteBanner(className: widget.prediction.className),
+
           // ── Ingredients list ──────────────────
           Expanded(
             child: ListView.separated(
-              padding: const EdgeInsets.fromLTRB(18, 18, 18, 100),
+              padding: const EdgeInsets.fromLTRB(18, 14, 18, 100),
               itemCount: _ingredients.length,
               separatorBuilder: (_, __) => const SizedBox(height: 10),
               itemBuilder: (context, index) {
@@ -93,9 +92,9 @@ class _IngredientsScreenState extends State<IngredientsScreen> {
                   onGramsChanged: (g) => _updateGrams(index, g),
                   onRemove: () => _removeIngredient(index),
                 ).animate().fadeIn(
-                  delay: Duration(milliseconds: 60 * index),
+                  delay: Duration(milliseconds: 50 * index),
                   duration: 350.ms,
-                ).slideX(begin: 0.05);
+                ).slideX(begin: 0.06);
               },
             ),
           ),
@@ -122,7 +121,7 @@ class _IngredientsScreenState extends State<IngredientsScreen> {
   }
 }
 
-// ── Live calorie banner ───────────────────────
+// ── Slim calorie banner with Hero ─────────────
 class _CalorieBanner extends StatelessWidget {
   final double calories;
   const _CalorieBanner({required this.calories});
@@ -131,7 +130,7 @@ class _CalorieBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.fromLTRB(18, 8, 18, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [AppTheme.primary, AppTheme.accentWarm],
@@ -141,7 +140,7 @@ class _CalorieBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primary.withOpacity(0.25),
+            color: AppTheme.primary.withValues(alpha: 0.25),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -150,30 +149,39 @@ class _CalorieBanner extends StatelessWidget {
       child: Row(
         children: [
           const Icon(Icons.local_fire_department_rounded,
-              color: Colors.white, size: 28),
-          const SizedBox(width: 12),
+              color: Colors.white, size: 24),
+          const SizedBox(width: 10),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Total Calories',
                 style: GoogleFonts.dmSans(
-                  fontSize: 12,
+                  fontSize: 11,
                   color: Colors.white70,
                   fontWeight: FontWeight.w500,
                 )),
-              Text('${calories.toStringAsFixed(0)} kcal',
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                )),
+              // Hero tag connects to nutrition screen's big number
+              Hero(
+                tag: 'calorie_hero',
+                child: Material(
+                  color: Colors.transparent,
+                  child: Text(
+                    '${calories.toStringAsFixed(0)} kcal',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
           const Spacer(),
-          Text('Tap to adjust\nportions below',
+          Text('Adjust portions\nbelow',
             textAlign: TextAlign.right,
             style: GoogleFonts.dmSans(
-              fontSize: 12,
+              fontSize: 11,
               color: Colors.white70,
               height: 1.4,
             )),
@@ -183,7 +191,7 @@ class _CalorieBanner extends StatelessWidget {
   }
 }
 
-// ── Ingredient card ───────────────────────────
+// ── Ingredient card with +/− stepper ─────────
 class _IngredientCard extends StatefulWidget {
   final Ingredient ingredient;
   final ValueChanged<double> onGramsChanged;
@@ -200,19 +208,18 @@ class _IngredientCard extends StatefulWidget {
 }
 
 class _IngredientCardState extends State<_IngredientCard> {
-  late TextEditingController _ctrl;
+  late double _grams;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = TextEditingController(
-        text: widget.ingredient.grams.toStringAsFixed(0));
+    _grams = widget.ingredient.grams;
   }
 
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
+  void _adjust(double delta) {
+    final newGrams = (_grams + delta).clamp(5.0, 1000.0);
+    setState(() => _grams = newGrams);
+    widget.onGramsChanged(newGrams);
   }
 
   @override
@@ -223,98 +230,137 @@ class _IngredientCardState extends State<_IngredientCard> {
       decoration: BoxDecoration(
         color: colors.card,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: colors.divider),
+        boxShadow: AppTheme.softShadow,
       ),
-      padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
+      child: Row(
         children: [
-          Row(
-            children: [
-              Container(
-                width: 38, height: 38,
-                decoration: BoxDecoration(
-                  color: AppTheme.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.eco_rounded,
-                    color: AppTheme.primary, size: 18),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(widget.ingredient.name,
+          // Icon
+          Container(
+            width: 38, height: 38,
+            decoration: BoxDecoration(
+              color: AppTheme.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.eco_rounded,
+                color: AppTheme.primary, size: 18),
+          ),
+          const SizedBox(width: 12),
+
+          // Name + calories
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(widget.ingredient.name,
                   style: GoogleFonts.dmSans(
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: colors.textPrimary,
                   )),
-              ),
-              IconButton(
-                icon: Icon(Icons.remove_circle_outline_rounded,
-                    color: colors.textSecondary, size: 22),
-                onPressed: widget.onRemove,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-            ],
+                const SizedBox(height: 3),
+                Text(
+                  '${widget.ingredient.scaledCalories.toStringAsFixed(0)} kcal',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: colors.textSecondary,
+                  )),
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
+
+          // +/− stepper
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Portion: ',
-                style: GoogleFonts.dmSans(
-                  fontSize: 13,
-                  color: colors.textSecondary,
-                )),
+              _StepBtn(
+                icon: Icons.remove_rounded,
+                onTap: () => _adjust(-10),
+              ),
               SizedBox(
-                width: 70,
-                child: TextFormField(
-                  controller: _ctrl,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly],
+                width: 52,
+                child: Text(
+                  '${_grams.toStringAsFixed(0)}g',
+                  textAlign: TextAlign.center,
                   style: GoogleFonts.dmSans(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: AppTheme.primary,
                   ),
-                  decoration: InputDecoration(
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 8),
-                    filled: true,
-                    fillColor: AppTheme.primary.withOpacity(0.08),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                  onChanged: (v) {
-                    final grams = double.tryParse(v) ?? 0;
-                    if (grams > 0) widget.onGramsChanged(grams);
-                  },
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(left: 6),
-                child: Text('g',
-                  style: GoogleFonts.dmSans(
-                    fontSize: 13,
-                    color: colors.textSecondary,
-                  )),
-              ),
-              const Spacer(),
-              Text(
-                '${widget.ingredient.scaledCalories.toStringAsFixed(0)} kcal',
-                style: GoogleFonts.dmSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: colors.textSecondary,
-                ),
+              _StepBtn(
+                icon: Icons.add_rounded,
+                onTap: () => _adjust(10),
               ),
             ],
           ),
+
+          const SizedBox(width: 6),
+          GestureDetector(
+            onTap: widget.onRemove,
+            child: Icon(Icons.close_rounded,
+                color: colors.textSecondary.withValues(alpha: 0.5), size: 18),
+          ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Stepper button with pulse animation ───────
+class _StepBtn extends StatefulWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _StepBtn({required this.icon, required this.onTap});
+
+  @override
+  State<_StepBtn> createState() => _StepBtnState();
+}
+
+class _StepBtnState extends State<_StepBtn>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ac;
+  late Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ac = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+    );
+    _scale = Tween(begin: 1.0, end: 0.80).animate(
+      CurvedAnimation(parent: _ac, curve: Curves.easeOut));
+  }
+
+  @override
+  void dispose() {
+    _ac.dispose();
+    super.dispose();
+  }
+
+  void _onTap() {
+    _ac.forward().then((_) => _ac.reverse());
+    widget.onTap();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scale,
+      child: GestureDetector(
+        onTap: _onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          width: 32, height: 32,
+          decoration: BoxDecoration(
+            color: AppTheme.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(9),
+          ),
+          child: Icon(widget.icon, color: AppTheme.primary, size: 16),
+        ),
       ),
     );
   }
@@ -339,7 +385,13 @@ class _BottomBar extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: colors.background,
-        border: Border(top: BorderSide(color: colors.divider)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, -4),
+          ),
+        ],
       ),
       padding: EdgeInsets.fromLTRB(
           18, 14, 18, MediaQuery.of(context).padding.bottom + 14),
@@ -355,7 +407,7 @@ class _BottomBar extends StatelessWidget {
               padding: const EdgeInsets.symmetric(
                   horizontal: 18, vertical: 14),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14)),
+                  borderRadius: BorderRadius.circular(50)),
             ),
           ),
           const SizedBox(width: 12),
@@ -367,7 +419,7 @@ class _BottomBar extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
+                    borderRadius: BorderRadius.circular(50)),
               ),
             ),
           ),
@@ -390,7 +442,6 @@ class _AddIngredientSheetState extends State<_AddIngredientSheet> {
   final _searchCtrl = TextEditingController();
   final _gramsCtrl  = TextEditingController(text: '100');
 
-  // Manual entry controllers
   final _nameCtrl   = TextEditingController();
   final _calCtrl    = TextEditingController();
   final _protCtrl   = TextEditingController();
@@ -448,7 +499,6 @@ class _AddIngredientSheetState extends State<_AddIngredientSheet> {
       return;
     }
 
-    // Manual entry fallback
     if (_nameCtrl.text.trim().isEmpty) return;
     widget.onAdd(Ingredient(
       name:     _nameCtrl.text.trim(),
@@ -477,7 +527,6 @@ class _AddIngredientSheetState extends State<_AddIngredientSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Handle
             Center(
               child: Container(
                 width: 36, height: 4,
@@ -489,31 +538,24 @@ class _AddIngredientSheetState extends State<_AddIngredientSheet> {
             ),
             const SizedBox(height: 18),
 
-            // Title
             Text('Add Ingredient',
-              style: GoogleFonts.playfairDisplay(
+              style: GoogleFonts.plusJakartaSans(
                 fontSize: 22, fontWeight: FontWeight.w700,
                 color: colors.textPrimary)),
 
             const SizedBox(height: 6),
             Text(
-              _showManual
-                  ? 'Enter details manually'
-                  : 'Search our database or add manually',
-              style: GoogleFonts.dmSans(
-                  fontSize: 13, color: colors.textSecondary)),
+              _showManual ? 'Enter details manually' : 'Search our database or add manually',
+              style: GoogleFonts.dmSans(fontSize: 13, color: colors.textSecondary)),
 
             const SizedBox(height: 18),
 
             if (!_showManual) ...[
-              // ── Search mode ─────────────────
-              // Search bar
               TextField(
                 controller: _searchCtrl,
                 autofocus: true,
                 onChanged: _search,
-                style: GoogleFonts.dmSans(
-                    fontSize: 15, color: colors.textPrimary),
+                style: GoogleFonts.dmSans(fontSize: 15, color: colors.textPrimary),
                 decoration: InputDecoration(
                   hintText: 'Search ingredients...',
                   hintStyle: GoogleFonts.dmSans(fontSize: 14),
@@ -525,10 +567,7 @@ class _AddIngredientSheetState extends State<_AddIngredientSheet> {
                               size: 18, color: colors.textSecondary),
                           onPressed: () {
                             _searchCtrl.clear();
-                            setState(() {
-                              _searchResults = [];
-                              _selected = null;
-                            });
+                            setState(() { _searchResults = []; _selected = null; });
                           },
                         )
                       : null,
@@ -537,7 +576,6 @@ class _AddIngredientSheetState extends State<_AddIngredientSheet> {
                 ),
               ),
 
-              // Loading indicator
               if (_isSearching)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),
@@ -550,7 +588,6 @@ class _AddIngredientSheetState extends State<_AddIngredientSheet> {
                   ),
                 ),
 
-              // Search results
               if (_searchResults.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Container(
@@ -558,7 +595,7 @@ class _AddIngredientSheetState extends State<_AddIngredientSheet> {
                   decoration: BoxDecoration(
                     color: colors.card,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: colors.divider),
+                    boxShadow: AppTheme.softShadow,
                   ),
                   child: ListView.separated(
                     shrinkWrap: true,
@@ -589,7 +626,6 @@ class _AddIngredientSheetState extends State<_AddIngredientSheet> {
                 ),
               ],
 
-              // No results message
               if (_searchCtrl.text.isNotEmpty &&
                   !_isSearching &&
                   _searchResults.isEmpty &&
@@ -600,7 +636,7 @@ class _AddIngredientSheetState extends State<_AddIngredientSheet> {
                     children: [
                       Icon(Icons.search_off_rounded,
                           size: 32,
-                          color: colors.textSecondary.withOpacity(0.4)),
+                          color: colors.textSecondary.withValues(alpha: 0.4)),
                       const SizedBox(height: 8),
                       Text('No results for "${_searchCtrl.text}"',
                         style: GoogleFonts.dmSans(
@@ -617,16 +653,14 @@ class _AddIngredientSheetState extends State<_AddIngredientSheet> {
                   ),
                 ),
 
-              // Selected ingredient confirmation
               if (_selected != null) ...[
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: AppTheme.primary.withOpacity(0.06),
+                    color: AppTheme.primary.withValues(alpha: 0.06),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                        color: AppTheme.primary.withOpacity(0.3)),
+                    boxShadow: AppTheme.softShadow,
                   ),
                   child: Row(
                     children: [
@@ -644,8 +678,7 @@ class _AddIngredientSheetState extends State<_AddIngredientSheet> {
                             Text(
                               '${_selected!.calories.toStringAsFixed(0)} kcal/100g',
                               style: GoogleFonts.dmSans(
-                                  fontSize: 12,
-                                  color: colors.textSecondary)),
+                                  fontSize: 12, color: colors.textSecondary)),
                           ],
                         ),
                       ),
@@ -662,7 +695,6 @@ class _AddIngredientSheetState extends State<_AddIngredientSheet> {
                 ),
               ],
 
-              // Portion input (shown when ingredient selected)
               if (_selected != null) ...[
                 const SizedBox(height: 14),
                 Text('Portion size',
@@ -670,32 +702,28 @@ class _AddIngredientSheetState extends State<_AddIngredientSheet> {
                     fontSize: 13, fontWeight: FontWeight.w600,
                     color: colors.textSecondary)),
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _gramsCtrl,
-                        keyboardType: TextInputType.number,
-                        style: GoogleFonts.dmSans(
-                            fontSize: 15, color: colors.textPrimary),
-                        decoration: InputDecoration(
-                          hintText: '100',
-                          suffixText: 'g',
-                          prefixIcon: const Icon(
-                              Icons.scale_rounded,
-                              color: AppTheme.primary, size: 20),
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 14),
-                        ),
+                Row(children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _gramsCtrl,
+                      keyboardType: TextInputType.number,
+                      style: GoogleFonts.dmSans(
+                          fontSize: 15, color: colors.textPrimary),
+                      decoration: InputDecoration(
+                        hintText: '100',
+                        suffixText: 'g',
+                        prefixIcon: const Icon(Icons.scale_rounded,
+                            color: AppTheme.primary, size: 20),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 14),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ]),
               ],
 
               const SizedBox(height: 16),
 
-              // Manual entry toggle (only shown when no results / not searching)
               if (_selected == null &&
                   _searchResults.isEmpty &&
                   _searchCtrl.text.isEmpty)
@@ -709,7 +737,6 @@ class _AddIngredientSheetState extends State<_AddIngredientSheet> {
                   ),
                 ),
             ] else ...[
-              // ── Manual entry mode ────────────
               GestureDetector(
                 onTap: () => setState(() => _showManual = false),
                 child: Row(
@@ -728,23 +755,22 @@ class _AddIngredientSheetState extends State<_AddIngredientSheet> {
               _field(_nameCtrl,  'Ingredient name', context, isNumber: false),
               const SizedBox(height: 10),
               Row(children: [
-                Expanded(child: _field(_gramsCtrl, 'Grams',       context, isNumber: true)),
+                Expanded(child: _field(_gramsCtrl, 'Grams', context, isNumber: true)),
                 const SizedBox(width: 10),
-                Expanded(child: _field(_calCtrl,   'Cal/100g',    context, isNumber: true)),
+                Expanded(child: _field(_calCtrl, 'Cal/100g', context, isNumber: true)),
               ]),
               const SizedBox(height: 10),
               Row(children: [
-                Expanded(child: _field(_protCtrl,  'Protein/100g', context, isNumber: true)),
+                Expanded(child: _field(_protCtrl, 'Protein/100g', context, isNumber: true)),
                 const SizedBox(width: 6),
-                Expanded(child: _field(_carbCtrl,  'Carbs/100g',   context, isNumber: true)),
+                Expanded(child: _field(_carbCtrl, 'Carbs/100g', context, isNumber: true)),
                 const SizedBox(width: 6),
-                Expanded(child: _field(_fatCtrl,   'Fat/100g',     context, isNumber: true)),
+                Expanded(child: _field(_fatCtrl, 'Fat/100g', context, isNumber: true)),
               ]),
             ],
 
             const SizedBox(height: 20),
 
-            // Add button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -755,7 +781,7 @@ class _AddIngredientSheetState extends State<_AddIngredientSheet> {
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
+                      borderRadius: BorderRadius.circular(50)),
                 ),
                 child: Text(
                   _showManual ? 'Add Ingredient' : 'Add to Meal',
@@ -781,8 +807,7 @@ class _AddIngredientSheetState extends State<_AddIngredientSheet> {
         labelText: label,
         labelStyle: GoogleFonts.dmSans(fontSize: 12),
         isDense: true,
-        contentPadding: const EdgeInsets.symmetric(
-            horizontal: 12, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       ),
     );
   }
@@ -795,8 +820,6 @@ class _ServingNoteBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<AppColors>()!;
-
-    // Get serving note from InferenceService
     final note = InferenceService.servingNotes[className];
     if (note == null) return const SizedBox.shrink();
 
@@ -804,14 +827,13 @@ class _ServingNoteBanner extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(18, 10, 18, 0),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: AppTheme.accent.withOpacity(0.1),
+        color: AppTheme.accent.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.accent.withOpacity(0.3)),
+        boxShadow: AppTheme.softShadow,
       ),
       child: Row(
         children: [
-          Icon(Icons.info_outline_rounded,
-              color: AppTheme.accent, size: 18),
+          Icon(Icons.info_outline_rounded, color: AppTheme.accent, size: 18),
           const SizedBox(width: 10),
           Expanded(
             child: RichText(
@@ -828,7 +850,7 @@ class _ServingNoteBanner extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const TextSpan(text: '. Adjust grams as needed.'),
+                  const TextSpan(text: '. Adjust as needed.'),
                 ],
               ),
             ),
@@ -838,4 +860,3 @@ class _ServingNoteBanner extends StatelessWidget {
     ).animate().fadeIn(duration: 400.ms);
   }
 }
-

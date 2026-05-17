@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
+import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -13,6 +14,21 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  int _mealCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    final db   = context.read<DatabaseService>();
+    final auth = context.read<AuthService>();
+    final userId = auth.currentUserId ?? '';
+    final logs = await db.getMealHistory(userId: userId);
+    if (mounted) setState(() => _mealCount = logs.length);
+  }
 
   // ── Update display name ──────────────────────
   void _showUpdateNameDialog() {
@@ -42,10 +58,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () async {
-                  if (ctrl.text.trim().isEmpty) return;
+                  if (ctrl.text.trim().isEmpty) { return; }
                   await FirebaseAuth.instance.currentUser
                       ?.updateDisplayName(ctrl.text.trim());
-                  if (!mounted) return;
+                  if (!mounted) { return; }
                   Navigator.pop(context);
                   _showSnack('Name updated successfully ✅');
                   setState(() {});
@@ -81,9 +97,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   padding: const EdgeInsets.all(12),
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.08),
+                    color: Colors.red.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.red.withOpacity(0.3)),
                   ),
                   child: Text(error!,
                     style: GoogleFonts.dmSans(
@@ -107,8 +122,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       return;
                     }
                     if (newCtrl.text.length < 6) {
-                      setLocal(
-                          () => error = 'Password must be at least 6 characters');
+                      setLocal(() => error = 'Password must be at least 6 characters');
                       return;
                     }
                     try {
@@ -119,7 +133,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       );
                       await user.reauthenticateWithCredential(cred);
                       await user.updatePassword(newCtrl.text);
-                      if (!mounted) return;
+                      if (!mounted) { return; }
                       Navigator.pop(ctx);
                       _showSnack('Password updated successfully ✅');
                     } on FirebaseAuthException catch (e) {
@@ -185,7 +199,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             .divider),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
+                        borderRadius: BorderRadius.circular(50)),
                   ),
                   child: Text('Cancel',
                     style: GoogleFonts.dmSans(fontWeight: FontWeight.w600)),
@@ -202,7 +216,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     backgroundColor: Colors.red,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
+                        borderRadius: BorderRadius.circular(50)),
                   ),
                   child: Text('Sign Out',
                     style: GoogleFonts.dmSans(
@@ -234,6 +248,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final initials = name.isNotEmpty
         ? name.trim().split(' ').map((w) => w[0]).take(2).join().toUpperCase()
         : '?';
+    final joinYear = user?.metadata.creationTime?.year;
 
     return Scaffold(
       body: SafeArea(
@@ -245,59 +260,86 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               // ── Header ────────────────────────
               Text('Profile',
-                style: GoogleFonts.playfairDisplay(
+                style: GoogleFonts.plusJakartaSans(
                   fontSize: 28, fontWeight: FontWeight.w700,
                   color: colors.textPrimary),
               ).animate().fadeIn(duration: 400.ms),
 
               const SizedBox(height: 24),
 
-              // ── User card ─────────────────────
+              // ── Centered profile card ─────────
               Container(
-                padding: const EdgeInsets.all(20),
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppTheme.primary, AppTheme.accentWarm],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  color: colors.card,
                   borderRadius: BorderRadius.circular(24),
-                  boxShadow: [BoxShadow(
-                    color: AppTheme.primary.withOpacity(0.3),
-                    blurRadius: 20, offset: const Offset(0, 8),
-                  )],
+                  boxShadow: AppTheme.softShadow,
                 ),
-                child: Row(
+                child: Column(
                   children: [
-                    // Avatar
+                    // Gradient ring avatar
                     Container(
-                      width: 60, height: 60,
+                      padding: const EdgeInsets.all(3),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
                         shape: BoxShape.circle,
+                        gradient: const LinearGradient(
+                          colors: [AppTheme.primary, AppTheme.accentWarm],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                       ),
-                      child: Center(
-                        child: Text(initials,
-                          style: GoogleFonts.playfairDisplay(
-                            fontSize: 22, fontWeight: FontWeight.w700,
-                            color: Colors.white)),
+                      child: Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: colors.card,
+                        ),
+                        child: CircleAvatar(
+                          radius: 38,
+                          backgroundColor: AppTheme.primary.withValues(alpha: 0.12),
+                          child: Text(initials,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 26, fontWeight: FontWeight.w700,
+                              color: AppTheme.primary)),
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(name,
-                            style: GoogleFonts.playfairDisplay(
-                              fontSize: 18, fontWeight: FontWeight.w700,
-                              color: Colors.white)),
-                          const SizedBox(height: 4),
-                          Text(email,
-                            style: GoogleFonts.dmSans(
-                              fontSize: 13, color: Colors.white70)),
-                        ],
-                      ),
+
+                    const SizedBox(height: 14),
+
+                    Text(name,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 20, fontWeight: FontWeight.w700,
+                        color: colors.textPrimary)),
+                    const SizedBox(height: 4),
+                    Text(email,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 13, color: colors.textSecondary)),
+
+                    const SizedBox(height: 18),
+                    Divider(color: colors.divider, height: 1),
+                    const SizedBox(height: 18),
+
+                    // Stats row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _StatBadge(
+                          label: 'Total Meals',
+                          value: '$_mealCount',
+                          colors: colors,
+                        ),
+                        Container(
+                          width: 1, height: 36,
+                          color: colors.divider,
+                        ),
+                        _StatBadge(
+                          label: 'Member Since',
+                          value: joinYear != null ? '$joinYear' : '—',
+                          colors: colors,
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -329,7 +371,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: Icons.email_outlined,
                 title: 'Email',
                 subtitle: email,
-                onTap: null, // email can't be changed easily
+                onTap: null,
                 colors: colors,
                 showArrow: false,
               ).animate().fadeIn(delay: 250.ms).slideX(begin: 0.05),
@@ -358,7 +400,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               const SizedBox(height: 24),
 
-              // ── Danger zone ───────────────────
+              // ── Sign out ──────────────────────
               _SectionTitle('Session', colors),
               const SizedBox(height: 10),
 
@@ -367,15 +409,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.06),
+                    color: Colors.red.withValues(alpha: 0.06),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.red.withOpacity(0.2)),
+                    boxShadow: AppTheme.softShadow,
                   ),
                   child: Row(children: [
                     Container(
                       width: 40, height: 40,
                       decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.1),
+                        color: Colors.red.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(11),
                       ),
                       child: const Icon(Icons.logout_rounded,
@@ -429,7 +471,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               )),
               const SizedBox(height: 18),
               Text('Supported Foods',
-                style: GoogleFonts.playfairDisplay(
+                style: GoogleFonts.plusJakartaSans(
                   fontSize: 20, fontWeight: FontWeight.w700,
                   color: colors.textPrimary)),
               const SizedBox(height: 14),
@@ -439,10 +481,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: AppTheme.primary.withOpacity(0.08),
+                    color: AppTheme.primary.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                        color: AppTheme.primary.withOpacity(0.2)),
                   ),
                   child: Text(f,
                     style: GoogleFonts.dmSans(
@@ -454,6 +494,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         );
       },
+    );
+  }
+}
+
+// ── Stat badge ────────────────────────────────
+class _StatBadge extends StatelessWidget {
+  final String label;
+  final String value;
+  final AppColors colors;
+  const _StatBadge({required this.label, required this.value, required this.colors});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(value,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 22, fontWeight: FontWeight.w700,
+            color: AppTheme.primary)),
+        const SizedBox(height: 2),
+        Text(label,
+          style: GoogleFonts.dmSans(
+            fontSize: 12, color: colors.textSecondary,
+            fontWeight: FontWeight.w500)),
+      ],
     );
   }
 }
@@ -500,13 +565,13 @@ class _SettingsTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: colors.card,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: colors.divider),
+          boxShadow: AppTheme.softShadow,
         ),
         child: Row(children: [
           Container(
             width: 40, height: 40,
             decoration: BoxDecoration(
-              color: AppTheme.primary.withOpacity(0.1),
+              color: AppTheme.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(11),
             ),
             child: Icon(icon, color: AppTheme.primary, size: 20),
@@ -564,14 +629,14 @@ class _StyledDialog extends StatelessWidget {
             Container(
               width: 48, height: 48,
               decoration: BoxDecoration(
-                color: AppTheme.primary.withOpacity(0.1),
+                color: AppTheme.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(icon, color: AppTheme.primary, size: 24),
             ),
             const SizedBox(height: 12),
             Text(title,
-              style: GoogleFonts.playfairDisplay(
+              style: GoogleFonts.plusJakartaSans(
                 fontSize: 20, fontWeight: FontWeight.w700,
                 color: colors.textPrimary)),
             const SizedBox(height: 20),

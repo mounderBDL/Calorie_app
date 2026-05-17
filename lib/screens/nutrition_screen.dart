@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
 import '../models/models.dart';
 import '../services/auth_service.dart';
@@ -34,9 +33,6 @@ class NutritionScreen extends StatelessWidget {
     final auth   = context.read<AuthService>();
 
     final totalMacroG = totalProtein + totalCarbs + totalFat;
-    final protPct = totalMacroG > 0 ? totalProtein / totalMacroG : 0.0;
-    final carbPct = totalMacroG > 0 ? totalCarbs   / totalMacroG : 0.0;
-    final fatPct  = totalMacroG > 0 ? totalFat     / totalMacroG : 0.0;
 
     return Scaffold(
       appBar: AppBar(
@@ -64,7 +60,7 @@ class NutritionScreen extends StatelessWidget {
                 ),
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [BoxShadow(
-                  color: AppTheme.primary.withOpacity(0.3),
+                  color: AppTheme.primary.withValues(alpha: 0.3),
                   blurRadius: 20, offset: const Offset(0, 8),
                 )],
               ),
@@ -76,12 +72,21 @@ class NutritionScreen extends StatelessWidget {
                       fontWeight: FontWeight.w500,
                     )),
                   const SizedBox(height: 6),
-                  Text(totalCalories.toStringAsFixed(0),
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: 56,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    )),
+                  // Hero tag matches the banner in IngredientsScreen
+                  Hero(
+                    tag: 'calorie_hero',
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Text(
+                        totalCalories.toStringAsFixed(0),
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 56,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
                   Text('kilocalories',
                     style: GoogleFonts.dmSans(
                       color: Colors.white70, fontSize: 16,
@@ -90,11 +95,11 @@ class NutritionScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _MacroPill('P', totalProtein, Colors.white),
+                      _MacroPill('P', totalProtein),
                       const SizedBox(width: 10),
-                      _MacroPill('C', totalCarbs,   Colors.white),
+                      _MacroPill('C', totalCarbs),
                       const SizedBox(width: 10),
-                      _MacroPill('F', totalFat,     Colors.white),
+                      _MacroPill('F', totalFat),
                     ],
                   ),
                 ],
@@ -103,9 +108,9 @@ class NutritionScreen extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // ── Macro pie chart ─────────────────
+            // ── Macro breakdown bars ────────────
             Text('Macro Breakdown',
-              style: GoogleFonts.playfairDisplay(
+              style: GoogleFonts.plusJakartaSans(
                 fontSize: 20, fontWeight: FontWeight.w700,
                 color: colors.textPrimary,
               )),
@@ -116,59 +121,32 @@ class NutritionScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 color: colors.card,
                 borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: colors.divider),
+                boxShadow: AppTheme.softShadow,
               ),
-              child: Row(
+              child: Column(
                 children: [
-                  SizedBox(
-                    height: 150, width: 150,
-                    child: PieChart(
-                      PieChartData(
-                        sectionsSpace: 3,
-                        centerSpaceRadius: 40,
-                        sections: [
-                          PieChartSectionData(
-                            value: totalProtein,
-                            color: const Color(0xFF4CAF50),
-                            title: '${(protPct * 100).toStringAsFixed(0)}%',
-                            titleStyle: GoogleFonts.dmSans(
-                              fontSize: 12, fontWeight: FontWeight.w700,
-                              color: Colors.white),
-                            radius: 50,
-                          ),
-                          PieChartSectionData(
-                            value: totalCarbs,
-                            color: AppTheme.accent,
-                            title: '${(carbPct * 100).toStringAsFixed(0)}%',
-                            titleStyle: GoogleFonts.dmSans(
-                              fontSize: 12, fontWeight: FontWeight.w700,
-                              color: Colors.white),
-                            radius: 50,
-                          ),
-                          PieChartSectionData(
-                            value: totalFat,
-                            color: AppTheme.primary,
-                            title: '${(fatPct * 100).toStringAsFixed(0)}%',
-                            titleStyle: GoogleFonts.dmSans(
-                              fontSize: 12, fontWeight: FontWeight.w700,
-                              color: Colors.white),
-                            radius: 50,
-                          ),
-                        ],
-                      ),
-                    ),
+                  _MacroBar(
+                    label: 'Protein',
+                    grams: totalProtein,
+                    total: totalMacroG,
+                    color: const Color(0xFF4CAF50),
+                    colors: colors,
                   ),
-                  const SizedBox(width: 24),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        _MacroRow('Protein', totalProtein, const Color(0xFF4CAF50)),
-                        const SizedBox(height: 16),
-                        _MacroRow('Carbs',   totalCarbs,   AppTheme.accent),
-                        const SizedBox(height: 16),
-                        _MacroRow('Fat',     totalFat,     AppTheme.primary),
-                      ],
-                    ),
+                  const SizedBox(height: 18),
+                  _MacroBar(
+                    label: 'Carbs',
+                    grams: totalCarbs,
+                    total: totalMacroG,
+                    color: AppTheme.accent,
+                    colors: colors,
+                  ),
+                  const SizedBox(height: 18),
+                  _MacroBar(
+                    label: 'Fat',
+                    grams: totalFat,
+                    total: totalMacroG,
+                    color: AppTheme.primary,
+                    colors: colors,
                   ),
                 ],
               ),
@@ -178,7 +156,7 @@ class NutritionScreen extends StatelessWidget {
 
             // ── Per-ingredient breakdown ────────
             Text('Ingredient Breakdown',
-              style: GoogleFonts.playfairDisplay(
+              style: GoogleFonts.plusJakartaSans(
                 fontSize: 20, fontWeight: FontWeight.w700,
                 color: colors.textPrimary,
               )),
@@ -231,10 +209,7 @@ class NutritionScreen extends StatelessWidget {
 
                   if (!context.mounted) return;
 
-                  // Pop all screens back to MainScreen
                   Navigator.of(context).popUntil((route) => route.isFirst);
-
-                  // Switch bottom nav to Meal Log tab (index 1)
                   mainScreenKey.currentState?.switchToMealLog();
                 },
                 icon: const Icon(Icons.bookmark_add_rounded, size: 20),
@@ -242,7 +217,7 @@ class NutritionScreen extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 18),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18)),
+                      borderRadius: BorderRadius.circular(50)),
                 ),
               ),
             ).animate().fadeIn(delay: 400.ms, duration: 400.ms),
@@ -253,57 +228,91 @@ class NutritionScreen extends StatelessWidget {
   }
 }
 
+// ── Animated horizontal macro bar ────────────
+class _MacroBar extends StatelessWidget {
+  final String label;
+  final double grams;
+  final double total;
+  final Color color;
+  final AppColors colors;
+
+  const _MacroBar({
+    required this.label,
+    required this.grams,
+    required this.total,
+    required this.color,
+    required this.colors,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final pct = total > 0 ? (grams / total).clamp(0.0, 1.0) : 0.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(children: [
+              Container(
+                width: 10, height: 10,
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 8),
+              Text(label,
+                style: GoogleFonts.dmSans(
+                  fontSize: 13, fontWeight: FontWeight.w600,
+                  color: colors.textSecondary,
+                )),
+            ]),
+            Text(
+              '${grams.toStringAsFixed(1)}g  ·  ${(pct * 100).toStringAsFixed(0)}%',
+              style: GoogleFonts.dmSans(
+                fontSize: 13, fontWeight: FontWeight.w700,
+                color: colors.textPrimary,
+              )),
+          ],
+        ),
+        const SizedBox(height: 8),
+        TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.0, end: pct),
+          duration: const Duration(milliseconds: 900),
+          curve: Curves.easeOut,
+          builder: (_, value, __) {
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: LinearProgressIndicator(
+                value: value,
+                backgroundColor: colors.divider,
+                valueColor: AlwaysStoppedAnimation(color),
+                minHeight: 10,
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
 // ── Macro pill ────────────────────────────────
 class _MacroPill extends StatelessWidget {
   final String label;
   final double value;
-  final Color color;
-  const _MacroPill(this.label, this.value, this.color);
+  const _MacroPill(this.label, this.value);
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
+        color: Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(30),
       ),
       child: Text('$label  ${value.toStringAsFixed(1)}g',
         style: GoogleFonts.dmSans(
-          fontSize: 13, color: color, fontWeight: FontWeight.w600)),
-    );
-  }
-}
-
-// ── Macro row ─────────────────────────────────
-class _MacroRow extends StatelessWidget {
-  final String label;
-  final double grams;
-  final Color color;
-  const _MacroRow(this.label, this.grams, this.color);
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).extension<AppColors>()!;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(children: [
-          Container(
-            width: 10, height: 10,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 8),
-          Text(label,
-            style: GoogleFonts.dmSans(
-              fontSize: 13, color: colors.textSecondary,
-              fontWeight: FontWeight.w500)),
-        ]),
-        Text('${grams.toStringAsFixed(1)}g',
-          style: GoogleFonts.dmSans(
-            fontSize: 13, color: colors.textPrimary,
-            fontWeight: FontWeight.w700)),
-      ],
+          fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600)),
     );
   }
 }
@@ -321,7 +330,7 @@ class _IngredientNutrRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.card,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colors.divider),
+        boxShadow: AppTheme.softShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -329,10 +338,12 @@ class _IngredientNutrRow extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(ing.name,
-                style: GoogleFonts.dmSans(
-                  fontSize: 14, fontWeight: FontWeight.w600,
-                  color: colors.textPrimary)),
+              Expanded(
+                child: Text(ing.name,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 14, fontWeight: FontWeight.w600,
+                    color: colors.textPrimary)),
+              ),
               Text('${ing.grams.toStringAsFixed(0)}g',
                 style: GoogleFonts.dmSans(
                   fontSize: 13, color: AppTheme.primary,
@@ -340,17 +351,16 @@ class _IngredientNutrRow extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Row(
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
             children: [
               _NutrChip('${ing.scaledCalories.toStringAsFixed(0)} kcal',
                   const Color(0xFFFF7043)),
-              const SizedBox(width: 6),
               _NutrChip('P ${ing.scaledProtein.toStringAsFixed(1)}g',
                   const Color(0xFF4CAF50)),
-              const SizedBox(width: 6),
               _NutrChip('C ${ing.scaledCarbs.toStringAsFixed(1)}g',
                   AppTheme.accent),
-              const SizedBox(width: 6),
               _NutrChip('F ${ing.scaledFat.toStringAsFixed(1)}g',
                   AppTheme.primary),
             ],
@@ -371,7 +381,7 @@ class _NutrChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(label,

@@ -70,7 +70,7 @@ class ResultScreen extends StatelessWidget {
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          Colors.black.withOpacity(0.6),
+                          Colors.black.withValues(alpha: 0.6),
                         ],
                         stops: const [0.5, 1.0],
                       ),
@@ -81,12 +81,12 @@ class ResultScreen extends StatelessWidget {
                     bottom: 20, left: 22, right: 22,
                     child: Text(
                       prediction.displayName,
-                      style: GoogleFonts.playfairDisplay(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w700,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w800,
                         color: Colors.white,
                         shadows: [
-                          Shadow(color: Colors.black45, blurRadius: 8),
+                          const Shadow(color: Colors.black45, blurRadius: 8),
                         ],
                       ),
                     ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.2),
@@ -109,7 +109,7 @@ class ResultScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: colors.card,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: colors.divider),
+                      boxShadow: AppTheme.softShadow,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -128,7 +128,7 @@ class ResultScreen extends StatelessWidget {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: _confidenceColor(conf).withOpacity(0.12),
+                                color: _confidenceColor(conf).withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
@@ -156,9 +156,9 @@ class ResultScreen extends StatelessWidget {
                         const SizedBox(height: 8),
                         Text(
                           '${(conf * 100).toStringAsFixed(1)}%',
-                          style: GoogleFonts.playfairDisplay(
+                          style: GoogleFonts.plusJakartaSans(
                             fontSize: 28,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w800,
                             color: _confidenceColor(conf),
                           ),
                         ),
@@ -175,7 +175,7 @@ class ResultScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: colors.card,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: colors.divider),
+                      boxShadow: AppTheme.softShadow,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,7 +243,7 @@ class ResultScreen extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 18),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius: BorderRadius.circular(50),
                         ),
                       ),
                     ),
@@ -266,7 +266,7 @@ class ResultScreen extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(vertical: 18),
                         side: const BorderSide(color: AppTheme.primary),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius: BorderRadius.circular(50),
                         ),
                       ),
                     ),

@@ -2,30 +2,47 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // ── Warm palette ─────────────────────────────
-  static const Color primary       = Color(0xFFE8622A); // warm orange
-  static const Color primaryLight  = Color(0xFFF5865A);
-  static const Color primaryDark   = Color(0xFFBF4718);
-  static const Color accent        = Color(0xFFF4A261); // soft amber
-  static const Color accentWarm    = Color(0xFFE76F51); // terracotta
+  // ── Soft Minimal palette ──────────────────────
+  static const Color primary       = Color(0xFFE8956D); // soft peach-salmon
+  static const Color primaryLight  = Color(0xFFF2B49A);
+  static const Color primaryDark   = Color(0xFFCC7050);
+  static const Color accent        = Color(0xFFF0A882); // soft amber
+  static const Color accentWarm    = Color(0xFFD4785A); // muted terracotta
 
   // Light theme colors
-  static const Color bgLight       = Color(0xFFFAF7F2); // warm cream
+  static const Color bgLight       = Color(0xFFFAF8F5); // warm off-white
   static const Color surfaceLight  = Color(0xFFFFFFFF);
-  static const Color cardLight     = Color(0xFFFFF8F0); // warm white
+  static const Color cardLight     = Color(0xFFFFFFFF); // pure white cards
   static const Color textPrimLight = Color(0xFF2D1B0E); // dark brown
-  static const Color textSecLight  = Color(0xFF8B6347); // warm brown
-  static const Color dividerLight  = Color(0xFFEDD5B8);
+  static const Color textSecLight  = Color(0xFF9E7D6A); // warm brown
+  static const Color dividerLight  = Color(0xFFEDE8E3); // soft divider
 
   // Dark theme colors
-  static const Color bgDark        = Color(0xFF1A1108); // very dark brown
-  static const Color surfaceDark   = Color(0xFF261A0D); // dark brown
-  static const Color cardDark      = Color(0xFF332211); // medium dark brown
-  static const Color textPrimDark  = Color(0xFFFAF0E0); // warm white
-  static const Color textSecDark   = Color(0xFFCCA882); // warm tan
+  static const Color bgDark        = Color(0xFF1A1108);
+  static const Color surfaceDark   = Color(0xFF261A0D);
+  static const Color cardDark      = Color(0xFF332211);
+  static const Color textPrimDark  = Color(0xFFFAF0E0);
+  static const Color textSecDark   = Color(0xFFCCA882);
   static const Color dividerDark   = Color(0xFF4A3020);
 
-  // ── Light Theme ──────────────────────────────
+  // ── Reusable soft shadow ──────────────────────
+  static List<BoxShadow> get softShadow => [
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.08),
+      blurRadius: 20,
+      offset: const Offset(0, 4),
+    ),
+  ];
+
+  static List<BoxShadow> get heroShadow => [
+    BoxShadow(
+      color: primary.withValues(alpha: 0.22),
+      blurRadius: 24,
+      offset: const Offset(0, 8),
+    ),
+  ];
+
+  // ── Light Theme ───────────────────────────────
   static ThemeData get light => ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
@@ -44,15 +61,16 @@ class AppTheme {
       elevation: 0,
       scrolledUnderElevation: 0,
       iconTheme: const IconThemeData(color: textPrimLight),
-      titleTextStyle: GoogleFonts.playfairDisplay(
+      titleTextStyle: GoogleFonts.plusJakartaSans(
         color: textPrimLight,
-        fontSize: 22,
+        fontSize: 20,
         fontWeight: FontWeight.w700,
       ),
     ),
     cardTheme: CardThemeData(
       color: cardLight,
       elevation: 0,
+      shadowColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
@@ -62,9 +80,10 @@ class AppTheme {
         backgroundColor: primary,
         foregroundColor: Colors.white,
         elevation: 0,
+        shadowColor: Colors.transparent,
         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(50),
         ),
         textStyle: GoogleFonts.dmSans(
           fontSize: 16,
@@ -73,16 +92,30 @@ class AppTheme {
         ),
       ),
     ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: primary,
+        side: const BorderSide(color: primary),
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(50),
+        ),
+        textStyle: GoogleFonts.dmSans(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: cardLight,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: dividerLight),
+        borderSide: const BorderSide(color: dividerLight),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: dividerLight),
+        borderSide: const BorderSide(color: dividerLight),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
@@ -93,7 +126,7 @@ class AppTheme {
     extensions: const [AppColors.light],
   );
 
-  // ── Dark Theme ───────────────────────────────
+  // ── Dark Theme ────────────────────────────────
   static ThemeData get dark => ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
@@ -112,9 +145,9 @@ class AppTheme {
       elevation: 0,
       scrolledUnderElevation: 0,
       iconTheme: const IconThemeData(color: textPrimDark),
-      titleTextStyle: GoogleFonts.playfairDisplay(
+      titleTextStyle: GoogleFonts.plusJakartaSans(
         color: textPrimDark,
-        fontSize: 22,
+        fontSize: 20,
         fontWeight: FontWeight.w700,
       ),
     ),
@@ -130,9 +163,10 @@ class AppTheme {
         backgroundColor: primary,
         foregroundColor: Colors.white,
         elevation: 0,
+        shadowColor: Colors.transparent,
         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(50),
         ),
         textStyle: GoogleFonts.dmSans(
           fontSize: 16,
@@ -141,16 +175,30 @@ class AppTheme {
         ),
       ),
     ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: primary,
+        side: const BorderSide(color: primary),
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(50),
+        ),
+        textStyle: GoogleFonts.dmSans(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: cardDark,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: dividerDark),
+        borderSide: const BorderSide(color: dividerDark),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: dividerDark),
+        borderSide: const BorderSide(color: dividerDark),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
@@ -162,14 +210,14 @@ class AppTheme {
   );
 
   static TextTheme _textTheme(Color primary, Color secondary) => TextTheme(
-    displayLarge: GoogleFonts.playfairDisplay(
-      fontSize: 48, fontWeight: FontWeight.w700, color: primary),
-    displayMedium: GoogleFonts.playfairDisplay(
+    displayLarge: GoogleFonts.plusJakartaSans(
+      fontSize: 48, fontWeight: FontWeight.w800, color: primary),
+    displayMedium: GoogleFonts.plusJakartaSans(
       fontSize: 36, fontWeight: FontWeight.w700, color: primary),
-    displaySmall: GoogleFonts.playfairDisplay(
-      fontSize: 28, fontWeight: FontWeight.w600, color: primary),
-    headlineMedium: GoogleFonts.playfairDisplay(
-      fontSize: 24, fontWeight: FontWeight.w600, color: primary),
+    displaySmall: GoogleFonts.plusJakartaSans(
+      fontSize: 28, fontWeight: FontWeight.w700, color: primary),
+    headlineMedium: GoogleFonts.plusJakartaSans(
+      fontSize: 24, fontWeight: FontWeight.w700, color: primary),
     headlineSmall: GoogleFonts.dmSans(
       fontSize: 20, fontWeight: FontWeight.w600, color: primary),
     titleLarge: GoogleFonts.dmSans(
@@ -186,7 +234,7 @@ class AppTheme {
   );
 }
 
-// ── Theme extension for custom colors ────────
+// ── Theme extension for custom colors ─────────
 @immutable
 class AppColors extends ThemeExtension<AppColors> {
   final Color background;

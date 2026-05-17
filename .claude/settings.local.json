@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(flutter pub *)"
+      "Bash(flutter pub *)",
+      "Bash(python -c ' *)",
+      "Bash(flutter analyze *)",
+      "Bash(flutter build *)",
+      "Bash(flutter clean *)"
     ]
   }
 }

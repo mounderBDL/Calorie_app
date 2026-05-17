@@ -39,7 +39,6 @@ class _LoginScreenState extends State<LoginScreen> {
         email:    _emailCtrl.text,
         password: _passCtrl.text,
       );
-      // AuthWrapper handles navigation automatically
     } on FirebaseAuthException catch (e) {
       setState(() {
         _error = context.read<AuthService>().getErrorMessage(e.code);
@@ -64,8 +63,8 @@ class _LoginScreenState extends State<LoginScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(colors: [
-                  AppTheme.primary.withOpacity(0.15),
-                  AppTheme.primary.withOpacity(0.0),
+                  AppTheme.primary.withValues(alpha: 0.15),
+                  AppTheme.primary.withValues(alpha: 0.0),
                 ]),
               ),
             ),
@@ -77,8 +76,8 @@ class _LoginScreenState extends State<LoginScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(colors: [
-                  AppTheme.accent.withOpacity(0.12),
-                  AppTheme.accent.withOpacity(0.0),
+                  AppTheme.accent.withValues(alpha: 0.12),
+                  AppTheme.accent.withValues(alpha: 0.0),
                 ]),
               ),
             ),
@@ -108,7 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(width: 12),
                         Text('SmartDZMeal',
-                          style: GoogleFonts.playfairDisplay(
+                          style: GoogleFonts.plusJakartaSans(
                             fontSize: 22, fontWeight: FontWeight.w700,
                             color: colors.textPrimary,
                           )),
@@ -119,8 +118,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     // Title
                     Text('Welcome\nback 👋',
-                      style: GoogleFonts.playfairDisplay(
-                        fontSize: 38, fontWeight: FontWeight.w700,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 36, fontWeight: FontWeight.w800,
                         height: 1.2, color: colors.textPrimary,
                       ),
                     ).animate().fadeIn(delay: 100.ms, duration: 500.ms)
@@ -141,9 +140,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         padding: const EdgeInsets.all(14),
                         margin: const EdgeInsets.only(bottom: 16),
                         decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.08),
+                          color: Colors.red.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.red.withOpacity(0.3)),
                         ),
                         child: Row(
                           children: [
@@ -218,7 +216,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 18),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16)),
+                              borderRadius: BorderRadius.circular(50)),
                         ),
                         child: _isLoading
                             ? const SizedBox(
@@ -298,7 +296,7 @@ class _LoginScreenState extends State<LoginScreen> {
     InputDecoration(
       hintText: hint,
       hintStyle: GoogleFonts.dmSans(fontSize: 14),
-      prefixIcon: Icon(icon, size: 20, color: AppTheme.primary.withOpacity(0.7)),
+      prefixIcon: Icon(icon, size: 20, color: AppTheme.primary.withValues(alpha: 0.7)),
       suffixIcon: suffix,
       contentPadding:
           const EdgeInsets.symmetric(horizontal: 16, vertical: 16),

@@ -7,6 +7,24 @@ import '../theme/app_theme.dart';
 import 'ingredients_screen.dart';
 import '../models/models.dart';
 
+// Maps a food className to one of the filter categories
+String _getCategory(String className) {
+  final n = className.toLowerCase();
+  if (['couscous', 'chourba', 'bourek', 'koftafinal', 'harira',
+       'rechta', 'mhajeb', 'dolma', 'chorba_frik', 'berkoukes',
+       'mechoui', 'merguez'].any(n.contains)) { return 'Algerian'; }
+  if (['cake', 'baklava', 'cheesecake', 'ice_cream', 'donut',
+       'cookie', 'brownie', 'muffin', 'chocolate',
+       'waffle', 'pancake'].any(n.contains)) { return 'Dessert'; }
+  if (['salad', 'caesar', 'vegetable', 'broccoli',
+       'spinach', 'fruit'].any(n.contains)) { return 'Healthy'; }
+  if (['egg', 'omelette', 'yogurt', 'granola',
+       'toast', 'breakfast'].any(n.contains)) { return 'Breakfast'; }
+  return 'Main';
+}
+
+const _kCategories = ['All', 'Algerian', 'Main', 'Dessert', 'Healthy', 'Breakfast'];
+
 class ManualEntryScreen extends StatefulWidget {
   const ManualEntryScreen({super.key});
   @override
@@ -14,15 +32,15 @@ class ManualEntryScreen extends StatefulWidget {
 }
 
 class _ManualEntryScreenState extends State<ManualEntryScreen> {
-  final _searchCtrl   = TextEditingController();
-  List<FoodEntry>     _results = [];
-  bool                _isSearching = false;
-  bool                _hasSearched = false;
+  final _searchCtrl    = TextEditingController();
+  List<FoodEntry>      _results     = [];
+  bool                 _isSearching = false;
+  bool                 _hasSearched = false;
+  String               _selectedCategory = 'All';
 
   @override
   void initState() {
     super.initState();
-    // Load all meals on open
     _search('');
   }
 
@@ -43,6 +61,13 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
         _hasSearched = true;
       });
     }
+  }
+
+  List<FoodEntry> get _filteredResults {
+    if (_selectedCategory == 'All') return _results;
+    return _results
+        .where((f) => _getCategory(f.className) == _selectedCategory)
+        .toList();
   }
 
   Future<void> _selectFood(FoodEntry food) async {
@@ -70,12 +95,13 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).extension<AppColors>()!;
+    final colors   = Theme.of(context).extension<AppColors>()!;
+    final filtered = _filteredResults;
 
     return Scaffold(
       appBar: AppBar(
         title: Text('Manual Entry',
-          style: GoogleFonts.playfairDisplay(
+          style: GoogleFonts.plusJakartaSans(
             fontSize: 20, fontWeight: FontWeight.w700)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
@@ -87,7 +113,7 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
 
           // ── Search bar ──────────────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(18, 8, 18, 12),
+            padding: const EdgeInsets.fromLTRB(18, 8, 18, 10),
             child: TextField(
               controller: _searchCtrl,
               autofocus: true,
@@ -116,19 +142,45 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
             ),
           ).animate().fadeIn(duration: 400.ms),
 
+          // ── Category filter chips ───────────
+          SizedBox(
+            height: 40,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              itemCount: _kCategories.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (_, i) {
+                final cat = _kCategories[i];
+                return _CategoryChip(
+                  label: cat,
+                  isSelected: _selectedCategory == cat,
+                  onTap: () => setState(() => _selectedCategory = cat),
+                );
+              },
+            ),
+          ).animate().fadeIn(delay: 100.ms, duration: 400.ms),
+
+          const SizedBox(height: 10),
+
           // ── Results count ───────────────────
           if (_hasSearched && !_isSearching)
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 6),
               child: Row(
                 children: [
                   Text(
-                    _searchCtrl.text.isEmpty
-                        ? '${_results.length} meals available'
-                        : '${_results.length} results',
+                    '${filtered.length} ${filtered.length == 1 ? 'meal' : 'meals'}',
                     style: GoogleFonts.dmSans(
-                      fontSize: 13, color: colors.textSecondary,
+                      fontSize: 12, color: colors.textSecondary,
                       fontWeight: FontWeight.w500)),
+                  if (_selectedCategory != 'All') ...[
+                    const SizedBox(width: 6),
+                    Text('· $_selectedCategory',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 12, color: AppTheme.primary,
+                        fontWeight: FontWeight.w600)),
+                  ],
                 ],
               ),
             ),
@@ -139,20 +191,21 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
                 ? const Center(
                     child: CircularProgressIndicator(
                         color: AppTheme.primary, strokeWidth: 2.5))
-                : _results.isEmpty && _hasSearched
+                : filtered.isEmpty && _hasSearched
                     ? Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.search_off_rounded,
                                 size: 48,
-                                color: colors.textSecondary.withOpacity(0.4)),
+                                color: colors.textSecondary
+                                    .withValues(alpha: 0.4)),
                             const SizedBox(height: 12),
                             Text('No meals found',
                               style: GoogleFonts.dmSans(
                                 fontSize: 16, color: colors.textSecondary)),
                             const SizedBox(height: 6),
-                            Text('Try a different search term',
+                            Text('Try a different search or category',
                               style: GoogleFonts.dmSans(
                                 fontSize: 13, color: colors.textSecondary)),
                           ],
@@ -160,11 +213,10 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
                       )
                     : ListView.separated(
                         padding: const EdgeInsets.fromLTRB(18, 0, 18, 32),
-                        itemCount: _results.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(height: 8),
+                        itemCount: filtered.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 8),
                         itemBuilder: (_, i) {
-                          final food = _results[i];
+                          final food = filtered[i];
                           return _FoodCard(
                             food: food,
                             colors: colors,
@@ -182,39 +234,76 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
   }
 }
 
+// ── Animated category chip ────────────────────
+class _CategoryChip extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _CategoryChip({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).extension<AppColors>()!;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.primary : colors.card,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: isSelected ? AppTheme.softShadow : [],
+        ),
+        child: AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 200),
+          style: GoogleFonts.dmSans(
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected ? Colors.white : colors.textSecondary,
+          ),
+          child: Text(label),
+        ),
+      ),
+    );
+  }
+}
+
 // ── Food result card ──────────────────────────
 class _FoodCard extends StatelessWidget {
   final FoodEntry   food;
   final AppColors   colors;
   final VoidCallback onTap;
+
   const _FoodCard({
     required this.food,
     required this.colors,
     required this.onTap,
   });
 
-  // Emoji per food group
   String get _emoji {
     final n = food.className.toLowerCase();
-    if (['couscous','chourba','bourek','koftafinal','harira',
-         'rechta','mhajeb','dolma','chorba_frik','berkoukes',
-         'mechoui','merguez'].any(n.contains)) return '🇩🇿';
-    if (['cake','baklava','cheesecake','ice_cream','pancake',
-         'waffle','donut','cookie','brownie','muffin',
+    if (['couscous', 'chourba', 'bourek', 'koftafinal', 'harira',
+         'rechta', 'mhajeb', 'dolma', 'chorba_frik', 'berkoukes',
+         'mechoui', 'merguez'].any(n.contains)) return '🇩🇿';
+    if (['cake', 'baklava', 'cheesecake', 'ice_cream', 'pancake',
+         'waffle', 'donut', 'cookie', 'brownie', 'muffin',
          'chocolate'].any(n.contains)) return '🍰';
-    if (['salad','vegetable','spinach','broccoli'].any(n.contains)) return '🥗';
+    if (['salad', 'vegetable', 'spinach', 'broccoli'].any(n.contains)) return '🥗';
     if (['pizza'].any(n.contains)) return '🍕';
-    if (['burger','hamburger','hot_dog','sandwich'].any(n.contains)) return '🍔';
-    if (['pasta','lasagna','spaghetti','ramen','noodle'].any(n.contains)) return '🍝';
-    if (['rice','fried_rice','paella','risotto'].any(n.contains)) return '🍚';
-    if (['chicken','steak','beef','lamb','kofta','kebab',
-         'merguez','mechoui'].any(n.contains)) return '🥩';
-    if (['salmon','fish','shrimp','mussel','seafood'].any(n.contains)) return '🐟';
-    if (['soup','chili','stew','chourba','harira'].any(n.contains)) return '🍜';
-    if (['egg','omelette','omelette'].any(n.contains)) return '🍳';
-    if (['fruit','apple','banana','orange','mango'].any(n.contains)) return '🍎';
-    if (['yogurt','milk','cheese'].any(n.contains)) return '🥛';
-    if (['juice','smoothie','drink'].any(n.contains)) return '🥤';
+    if (['burger', 'hamburger', 'hot_dog', 'sandwich'].any(n.contains)) return '🍔';
+    if (['pasta', 'lasagna', 'spaghetti', 'ramen', 'noodle'].any(n.contains)) return '🍝';
+    if (['rice', 'fried_rice', 'paella', 'risotto'].any(n.contains)) return '🍚';
+    if (['chicken', 'steak', 'beef', 'lamb', 'kofta', 'kebab'].any(n.contains)) return '🥩';
+    if (['salmon', 'fish', 'shrimp', 'seafood'].any(n.contains)) { return '🐟'; }
+    if (['soup', 'chili', 'stew'].any(n.contains)) { return '🍜'; }
+    if (['egg', 'omelette'].any(n.contains)) { return '🍳'; }
     return '🍽';
   }
 
@@ -227,19 +316,19 @@ class _FoodCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: colors.card,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: colors.divider),
+          boxShadow: AppTheme.softShadow,
         ),
         child: Row(
           children: [
             Container(
-              width: 46, height: 46,
+              width: 48, height: 48,
               decoration: BoxDecoration(
-                color: AppTheme.primary.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(12),
+                color: AppTheme.primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(13),
               ),
               child: Center(
                 child: Text(_emoji,
-                    style: const TextStyle(fontSize: 22))),
+                    style: const TextStyle(fontSize: 24))),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -252,26 +341,26 @@ class _FoodCard extends StatelessWidget {
                       color: colors.textPrimary)),
                   const SizedBox(height: 3),
                   Text(
-                    '${food.ingredients.length} default ingredients',
+                    '${food.ingredients.length} ingredients',
                     style: GoogleFonts.dmSans(
                       fontSize: 12, color: colors.textSecondary)),
                 ],
               ),
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: AppTheme.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                '${food.totalCalories.toStringAsFixed(0)} kcal',
-                style: GoogleFonts.dmSans(
-                  fontSize: 12, color: AppTheme.primary,
-                  fontWeight: FontWeight.w700)),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  food.totalCalories.toStringAsFixed(0),
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 18, fontWeight: FontWeight.w700,
+                    color: colors.textPrimary)),
+                Text('kcal',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 11, color: colors.textSecondary)),
+              ],
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             Icon(Icons.chevron_right_rounded,
                 size: 18, color: colors.textSecondary),
           ],
