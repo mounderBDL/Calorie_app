@@ -11,7 +11,7 @@ import '../models/models.dart';
 String _getCategory(String className) {
   final n = className.toLowerCase();
   if (['couscous', 'chourba', 'bourek', 'koftafinal', 'harira',
-       'rechta', 'mhajeb', 'dolma', 'chorba_frik', 'berkoukes',
+       'rechta', 'mhajeb', 'dolma', 'shorba_frik', 'berkoukes',
        'mechoui', 'merguez'].any(n.contains)) { return 'Algerian'; }
   if (['cake', 'baklava', 'cheesecake', 'ice_cream', 'donut',
        'cookie', 'brownie', 'muffin', 'chocolate',
@@ -290,20 +290,8 @@ class _FoodCard extends StatelessWidget {
   String get _emoji {
     final n = food.className.toLowerCase();
     if (['couscous', 'chourba', 'bourek', 'koftafinal', 'harira',
-         'rechta', 'mhajeb', 'dolma', 'chorba_frik', 'berkoukes',
+         'rechta', 'mhajeb', 'dolma', 'shorba_frik', 'berkoukes',
          'mechoui', 'merguez'].any(n.contains)) return '🇩🇿';
-    if (['cake', 'baklava', 'cheesecake', 'ice_cream', 'pancake',
-         'waffle', 'donut', 'cookie', 'brownie', 'muffin',
-         'chocolate'].any(n.contains)) return '🍰';
-    if (['salad', 'vegetable', 'spinach', 'broccoli'].any(n.contains)) return '🥗';
-    if (['pizza'].any(n.contains)) return '🍕';
-    if (['burger', 'hamburger', 'hot_dog', 'sandwich'].any(n.contains)) return '🍔';
-    if (['pasta', 'lasagna', 'spaghetti', 'ramen', 'noodle'].any(n.contains)) return '🍝';
-    if (['rice', 'fried_rice', 'paella', 'risotto'].any(n.contains)) return '🍚';
-    if (['chicken', 'steak', 'beef', 'lamb', 'kofta', 'kebab'].any(n.contains)) return '🥩';
-    if (['salmon', 'fish', 'shrimp', 'seafood'].any(n.contains)) { return '🐟'; }
-    if (['soup', 'chili', 'stew'].any(n.contains)) { return '🍜'; }
-    if (['egg', 'omelette'].any(n.contains)) { return '🍳'; }
     return '🍽';
   }
 

@@ -5,8 +5,16 @@ import '../services/auth_service.dart';
 import 'main_screen.dart';
 import 'login_screen.dart';
 
-class AuthWrapper extends StatelessWidget {
+class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  // Cached so the same widget instance (and GlobalKey) is always returned,
+  // preventing the framework from seeing a duplicate key on each stream emit.
+  final _mainScreen = MainScreen(key: mainScreenKey);
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +30,7 @@ class AuthWrapper extends StatelessWidget {
             ),
           );
         }
-        if (snapshot.hasData) return MainScreen(key: mainScreenKey);
+        if (snapshot.hasData) return _mainScreen;
         return const LoginScreen();
       },
     );

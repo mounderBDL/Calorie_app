@@ -6,6 +6,7 @@ import 'firebase_options.dart';
 import 'services/auth_service.dart';
 import 'services/inference_service.dart';
 import 'services/database_service.dart';
+import 'services/preferences_service.dart';
 import 'screens/auth_wrapper.dart';
 import 'theme/app_theme.dart';
 
@@ -30,7 +31,9 @@ void main() async {
     debugPrint('Model not ready yet: $e');
   }
 
-  final databaseService = DatabaseService();
+  final databaseService     = DatabaseService();
+  final preferencesService  = PreferencesService();
+  await preferencesService.load();
 
   runApp(
     MultiProvider(
@@ -38,6 +41,7 @@ void main() async {
         Provider<AuthService>(create: (_) => AuthService()),
         Provider<InferenceService>.value(value: inferenceService),
         Provider<DatabaseService>.value(value: databaseService),
+        ChangeNotifierProvider<PreferencesService>.value(value: preferencesService),
       ],
       child: const SmartDZMealApp(),
     ),

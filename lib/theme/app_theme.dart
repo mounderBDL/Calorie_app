@@ -8,6 +8,8 @@ class AppTheme {
   static const Color primaryDark   = Color(0xFFCC7050);
   static const Color accent        = Color(0xFFF0A882); // soft amber
   static const Color accentWarm    = Color(0xFFD4785A); // muted terracotta
+  static const Color green         = Color(0xFF4CAF50); // progress green
+  static const Color greenDark     = Color(0xFF388E3C); // deep green
 
   // Light theme colors
   static const Color bgLight       = Color(0xFFFAF8F5); // warm off-white

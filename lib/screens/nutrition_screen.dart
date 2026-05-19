@@ -8,7 +8,7 @@ import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import 'main_screen.dart';
 
-class NutritionScreen extends StatelessWidget {
+class NutritionScreen extends StatefulWidget {
   final PredictionResult prediction;
   final List<Ingredient> ingredients;
   final double totalCalories;
@@ -27,12 +27,19 @@ class NutritionScreen extends StatelessWidget {
   });
 
   @override
+  State<NutritionScreen> createState() => _NutritionScreenState();
+}
+
+class _NutritionScreenState extends State<NutritionScreen> {
+  bool _isSaving = false;
+
+  @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<AppColors>()!;
     final db     = context.read<DatabaseService>();
     final auth   = context.read<AuthService>();
 
-    final totalMacroG = totalProtein + totalCarbs + totalFat;
+    final totalMacroG = widget.totalProtein + widget.totalCarbs + widget.totalFat;
 
     return Scaffold(
       appBar: AppBar(
@@ -78,7 +85,7 @@ class NutritionScreen extends StatelessWidget {
                     child: Material(
                       color: Colors.transparent,
                       child: Text(
-                        totalCalories.toStringAsFixed(0),
+                        widget.totalCalories.toStringAsFixed(0),
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 56,
                           fontWeight: FontWeight.w800,
@@ -95,11 +102,11 @@ class NutritionScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _MacroPill('P', totalProtein),
+                      _MacroPill('P', widget.totalProtein),
                       const SizedBox(width: 10),
-                      _MacroPill('C', totalCarbs),
+                      _MacroPill('C', widget.totalCarbs),
                       const SizedBox(width: 10),
-                      _MacroPill('F', totalFat),
+                      _MacroPill('F', widget.totalFat),
                     ],
                   ),
                 ],
@@ -127,7 +134,7 @@ class NutritionScreen extends StatelessWidget {
                 children: [
                   _MacroBar(
                     label: 'Protein',
-                    grams: totalProtein,
+                    grams: widget.totalProtein,
                     total: totalMacroG,
                     color: const Color(0xFF4CAF50),
                     colors: colors,
@@ -135,7 +142,7 @@ class NutritionScreen extends StatelessWidget {
                   const SizedBox(height: 18),
                   _MacroBar(
                     label: 'Carbs',
-                    grams: totalCarbs,
+                    grams: widget.totalCarbs,
                     total: totalMacroG,
                     color: AppTheme.accent,
                     colors: colors,
@@ -143,7 +150,7 @@ class NutritionScreen extends StatelessWidget {
                   const SizedBox(height: 18),
                   _MacroBar(
                     label: 'Fat',
-                    grams: totalFat,
+                    grams: widget.totalFat,
                     total: totalMacroG,
                     color: AppTheme.primary,
                     colors: colors,
@@ -162,7 +169,7 @@ class NutritionScreen extends StatelessWidget {
               )),
             const SizedBox(height: 14),
 
-            ...ingredients.asMap().entries.map((entry) =>
+            ...widget.ingredients.asMap().entries.map((entry) =>
               Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: _IngredientNutrRow(entry.value, colors),
@@ -178,7 +185,7 @@ class NutritionScreen extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () async {
+                onPressed: _isSaving ? null : () async {
                   final userId = auth.currentUserId;
                   if (userId == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -194,14 +201,15 @@ class NutritionScreen extends StatelessWidget {
                     return;
                   }
 
+                  setState(() => _isSaving = true);
                   await db.logMeal(
                     MealLog(
-                      foodClassName:   prediction.className,
-                      foodDisplayName: prediction.displayName,
-                      totalCalories:   totalCalories,
-                      totalProtein:    totalProtein,
-                      totalCarbs:      totalCarbs,
-                      totalFat:        totalFat,
+                      foodClassName:   widget.prediction.className,
+                      foodDisplayName: widget.prediction.displayName,
+                      totalCalories:   widget.totalCalories,
+                      totalProtein:    widget.totalProtein,
+                      totalCarbs:      widget.totalCarbs,
+                      totalFat:        widget.totalFat,
                       loggedAt:        DateTime.now(),
                     ),
                     userId: userId,
@@ -212,8 +220,13 @@ class NutritionScreen extends StatelessWidget {
                   Navigator.of(context).popUntil((route) => route.isFirst);
                   mainScreenKey.currentState?.switchToMealLog();
                 },
-                icon: const Icon(Icons.bookmark_add_rounded, size: 20),
-                label: const Text('Save Meal'),
+                icon: _isSaving
+                    ? const SizedBox(
+                        width: 20, height: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.bookmark_add_rounded, size: 20),
+                label: Text(_isSaving ? 'Saving…' : 'Save Meal'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 18),
                   shape: RoundedRectangleBorder(

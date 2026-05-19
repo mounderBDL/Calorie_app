@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -5,16 +7,19 @@ import 'package:provider/provider.dart';
 import '../models/models.dart';
 import '../services/auth_service.dart';
 import '../services/database_service.dart';
+import '../services/preferences_service.dart';
 import '../theme/app_theme.dart';
 import 'nutrition_screen.dart';
+
+final mealLogScreenKey = GlobalKey<MealLogScreenState>();
 
 class MealLogScreen extends StatefulWidget {
   const MealLogScreen({super.key});
   @override
-  State<MealLogScreen> createState() => _MealLogScreenState();
+  State<MealLogScreen> createState() => MealLogScreenState();
 }
 
-class _MealLogScreenState extends State<MealLogScreen> {
+class MealLogScreenState extends State<MealLogScreen> {
   List<MealLog> _logs = [];
   bool _isLoading = true;
 
@@ -23,6 +28,8 @@ class _MealLogScreenState extends State<MealLogScreen> {
     super.initState();
     _loadLogs();
   }
+
+  void refresh() => _loadLogs();
 
   Future<void> _loadLogs() async {
     final db     = context.read<DatabaseService>();
@@ -36,22 +43,18 @@ class _MealLogScreenState extends State<MealLogScreen> {
     }
   }
 
-  double get _todayCalories {
-    final today = DateTime.now();
-    return _logs
-        .where((l) =>
-            l.loggedAt.year  == today.year &&
-            l.loggedAt.month == today.month &&
-            l.loggedAt.day   == today.day)
-        .fold(0.0, (sum, l) => sum + l.totalCalories);
-  }
-
-  int get _todayMealCount {
+  // Last 7 days calories (index 0 = 6 days ago, index 6 = today)
+  List<double> get _weekCalories {
     final now = DateTime.now();
-    return _logs.where((l) =>
-        l.loggedAt.year  == now.year &&
-        l.loggedAt.month == now.month &&
-        l.loggedAt.day   == now.day).length;
+    return List.generate(7, (i) {
+      final day = now.subtract(Duration(days: 6 - i));
+      return _logs
+          .where((l) =>
+              l.loggedAt.year  == day.year &&
+              l.loggedAt.month == day.month &&
+              l.loggedAt.day   == day.day)
+          .fold(0.0, (s, l) => s + l.totalCalories);
+    });
   }
 
   String _formatDate(DateTime dt) {
@@ -131,6 +134,182 @@ class _MealLogScreenState extends State<MealLogScreen> {
     );
   }
 
+  Widget _buildTrendCard(AppColors colors) {
+    final goal     = context.watch<PreferencesService>().dailyCalorieGoal.toDouble();
+    final weekCals = _weekCalories;
+    final now      = DateTime.now();
+
+    final weekMax = weekCals.fold(0.0, (prev, v) => v > prev ? v : prev);
+    final maxVal  = max(goal * 1.2, weekMax * 1.05);
+
+    const maxBarH = 68.0;
+    const chartH  = 82.0;
+
+    final dayLabels = List.generate(7, (i) {
+      final day = now.subtract(Duration(days: 6 - i));
+      return 'MTWTFSS'[day.weekday - 1];
+    });
+
+    Color barColor(double cal) {
+      if (cal == 0)    return colors.textSecondary.withValues(alpha: 0.12);
+      if (cal <= goal) return AppTheme.green;
+      return Colors.red.shade400;
+    }
+
+    final goalLineBottom = (goal / maxVal).clamp(0.0, 1.0) * maxBarH;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
+      decoration: BoxDecoration(
+        color: colors.card,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: AppTheme.softShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+
+          // ── Header ──────────────────────────────
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('7-Day Trend',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 15, fontWeight: FontWeight.w700,
+                      color: colors.textPrimary)),
+                  Text('kcal per day',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 12, color: colors.textSecondary)),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.flag_rounded,
+                        size: 12, color: AppTheme.primary),
+                    const SizedBox(width: 4),
+                    Text('${goal.toStringAsFixed(0)} kcal',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 12, fontWeight: FontWeight.w600,
+                        color: AppTheme.primary)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // ── Bars + goal line ─────────────────────
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              SizedBox(
+                height: chartH,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: List.generate(7, (i) {
+                    final cal     = weekCals[i];
+                    final isToday = i == 6;
+                    final barH    = cal > 0
+                        ? (cal / maxVal * maxBarH).clamp(3.0, maxBarH)
+                        : 3.0;
+                    final color   = barColor(cal);
+
+                    return Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          if (cal >= 50)
+                            Text(
+                              cal >= 1000
+                                  ? '${(cal / 1000).toStringAsFixed(1)}k'
+                                  : cal.toStringAsFixed(0),
+                              style: GoogleFonts.dmSans(
+                                fontSize: 8,
+                                fontWeight: isToday
+                                    ? FontWeight.w700 : FontWeight.w500,
+                                color: isToday
+                                    ? color : colors.textSecondary),
+                            ),
+                          if (cal >= 50) const SizedBox(height: 2),
+                          Container(
+                            height: barH,
+                            margin: EdgeInsets.symmetric(
+                                horizontal: isToday ? 2.5 : 4.0),
+                            decoration: BoxDecoration(
+                              color: color,
+                              borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(5)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ),
+              ),
+
+              // ── Dashed goal line ─────────────────
+              Positioned(
+                left: 0, right: 0,
+                bottom: goalLineBottom,
+                child: Row(
+                  children: List.generate(36, (i) => Expanded(
+                    child: Container(
+                      height: 1.5,
+                      color: i.isEven
+                          ? AppTheme.primary.withValues(alpha: 0.40)
+                          : Colors.transparent,
+                    ),
+                  )),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 6),
+
+          // ── Day labels ───────────────────────────
+          Row(
+            children: List.generate(7, (i) {
+              final isToday = i == 6;
+              return Expanded(
+                child: Text(
+                  isToday ? 'Now' : dayLabels[i],
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.dmSans(
+                    fontSize: isToday ? 9 : 11,
+                    fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
+                    color: isToday
+                        ? AppTheme.primary : colors.textSecondary),
+                ),
+              );
+            }),
+          ),
+
+          const SizedBox(height: 12),
+
+          // ── Legend ───────────────────────────────
+          Row(children: [
+            _LegendDot(AppTheme.green,      'Under goal', colors),
+            const SizedBox(width: 16),
+            _LegendDot(Colors.red.shade400, 'Over goal',  colors),
+          ]),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<AppColors>()!;
@@ -176,111 +355,10 @@ class _MealLogScreenState extends State<MealLogScreen> {
               ),
             ).animate().fadeIn(duration: 400.ms),
 
-            // ── Summary card with calorie ring ──
+            // ── 7-day trend card ─────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(18, 8, 18, 16),
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppTheme.primary, AppTheme.accentWarm],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(22),
-                  boxShadow: [BoxShadow(
-                    color: AppTheme.primary.withValues(alpha: 0.25),
-                    blurRadius: 16, offset: const Offset(0, 6),
-                  )],
-                ),
-                child: Row(
-                  children: [
-                    // Animated calorie ring
-                    SizedBox(
-                      width: 80, height: 80,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          TweenAnimationBuilder<double>(
-                            key: ValueKey(_todayCalories),
-                            tween: Tween(
-                              begin: 0.0,
-                              end: (_todayCalories / 2000).clamp(0.0, 1.0),
-                            ),
-                            duration: const Duration(milliseconds: 1200),
-                            curve: Curves.easeOut,
-                            builder: (_, value, __) {
-                              return CircularProgressIndicator(
-                                value: value,
-                                backgroundColor: Colors.white.withValues(alpha: 0.2),
-                                valueColor: const AlwaysStoppedAnimation(Colors.white),
-                                strokeWidth: 5,
-                                strokeCap: StrokeCap.round,
-                              );
-                            },
-                          ),
-                          SizedBox(
-                            width: 50,
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    _todayCalories.toStringAsFixed(0),
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 18, fontWeight: FontWeight.w800,
-                                      color: Colors.white,
-                                      height: 1.0,
-                                    )),
-                                  Text('kcal',
-                                    style: GoogleFonts.dmSans(
-                                      fontSize: 10, color: Colors.white70,
-                                      fontWeight: FontWeight.w600)),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(width: 18),
-
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Today\'s intake',
-                            style: GoogleFonts.dmSans(
-                              color: Colors.white70, fontSize: 12,
-                              fontWeight: FontWeight.w500)),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${_todayCalories.toStringAsFixed(0)} / 2000 kcal',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 15, fontWeight: FontWeight.w700,
-                              color: Colors.white)),
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.18),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              '$_todayMealCount ${_todayMealCount == 1 ? 'meal' : 'meals'} today',
-                              style: GoogleFonts.dmSans(
-                                fontSize: 12, color: Colors.white,
-                                fontWeight: FontWeight.w600)),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              child: _buildTrendCard(colors),
             ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.1),
 
             // ── Log list ─────────────────────────
@@ -558,6 +636,34 @@ class _MealLogCard extends StatelessWidget {
           totalFat:      log.totalFat,
         ),
       ),
+    );
+  }
+}
+
+class _LegendDot extends StatelessWidget {
+  final Color     color;
+  final String    label;
+  final AppColors colors;
+  const _LegendDot(this.color, this.label, this.colors);
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8, height: 8,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 5),
+        Text(label,
+          style: GoogleFonts.dmSans(
+            fontSize: 11, color: colors.textSecondary,
+            fontWeight: FontWeight.w500)),
+      ],
     );
   }
 }

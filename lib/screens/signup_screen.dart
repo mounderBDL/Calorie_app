@@ -182,7 +182,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                     const SizedBox(height: 32),
 
-                    Text('Create\naccount 🍽',
+                    Text('Create\naccount',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 36, fontWeight: FontWeight.w800,
                         height: 1.2, color: colors.textPrimary,

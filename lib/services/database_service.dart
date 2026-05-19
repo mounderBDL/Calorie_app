@@ -17,7 +17,7 @@ class DatabaseService {
     final dbPath = await getDatabasesPath();
     return openDatabase(
       join(dbPath, 'smartmeal.db'),
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE ingredients (
@@ -59,42 +59,44 @@ class DatabaseService {
         ''');
         await _seedData(db);
       },
+      onUpgrade: _onUpgrade,
     );
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.insert('ingredients', {
+        'name': 'Avocado', 'calories': 160.0,
+        'protein': 2.0, 'carbs': 8.5, 'fat': 14.7,
+      }, conflictAlgorithm: ConflictAlgorithm.ignore);
+      await db.insert('food_ingredients', {
+        'food_class_name': 'avocado_toast',
+        'ingredient_name': 'Avocado',
+        'default_grams': 100.0,
+      }, conflictAlgorithm: ConflictAlgorithm.ignore);
+    }
   }
 
   // ── Get ingredients for a food class ──────────
   Future<List<Ingredient>> getIngredientsForFood(String className) async {
-    final db = await database;
-    final foodIngRows = await db.query(
-      'food_ingredients',
-      where: 'food_class_name = ?',
-      whereArgs: [className],
-    );
-    if (foodIngRows.isEmpty) return _fallbackIngredients(className);
-
-    final List<Ingredient> result = [];
-    for (final row in foodIngRows) {
-      final ingName      = row['ingredient_name'] as String;
-      final defaultGrams = row['default_grams'] as double;
-      final ingRows      = await db.query(
-        'ingredients',
-        where: 'name = ?',
-        whereArgs: [ingName],
-      );
-      if (ingRows.isNotEmpty) {
-        final ing = ingRows.first;
-        result.add(Ingredient(
-          id:       ing['id'] as int,
-          name:     ing['name'] as String,
-          calories: ing['calories'] as double,
-          protein:  ing['protein'] as double,
-          carbs:    ing['carbs'] as double,
-          fat:      ing['fat'] as double,
-          grams:    defaultGrams,
-        ));
-      }
-    }
-    return result;
+    final db   = await database;
+    final rows = await db.rawQuery('''
+      SELECT i.id, i.name, i.calories, i.protein, i.carbs, i.fat,
+             fi.default_grams
+      FROM food_ingredients fi
+      JOIN ingredients i ON i.name = fi.ingredient_name
+      WHERE fi.food_class_name = ?
+    ''', [className]);
+    if (rows.isEmpty) return _fallbackIngredients(className);
+    return rows.map((r) => Ingredient(
+      id:       r['id'] as int?,
+      name:     r['name'] as String,
+      calories: r['calories'] as double,
+      protein:  r['protein'] as double,
+      carbs:    r['carbs'] as double,
+      fat:      r['fat'] as double,
+      grams:    r['default_grams'] as double,
+    )).toList();
   }
 
   // ── Search ingredients by name ────────────────
@@ -121,28 +123,48 @@ class DatabaseService {
   // ── Search foods by name ──────────────────────
   Future<List<FoodEntry>> searchFoods(String query) async {
     final db = await database;
-    final rows = await db.query(
-      'foods',
-      where: query.isEmpty
-          ? null
-          : 'LOWER(display_name) LIKE ? OR LOWER(class_name) LIKE ?',
-      whereArgs: query.isEmpty
-          ? null
-          : ['%${query.toLowerCase()}%', '%${query.toLowerCase()}%'],
-      orderBy: 'display_name ASC',
-    );
+    final q  = query.trim().toLowerCase();
+    final whereClause = q.isEmpty
+        ? ''
+        : "WHERE LOWER(f.display_name) LIKE '%$q%' OR LOWER(f.class_name) LIKE '%$q%'";
 
-    final List<FoodEntry> result = [];
-    for (final row in rows) {
-      final className  = row['class_name'] as String;
-      final ingredients = await getIngredientsForFood(className);
-      result.add(FoodEntry(
-        className:   className,
-        displayName: row['display_name'] as String,
-        ingredients: ingredients,
-      ));
+    final rows = await db.rawQuery('''
+      SELECT f.class_name, f.display_name,
+             i.id AS ing_id, i.name AS ing_name,
+             i.calories, i.protein, i.carbs, i.fat,
+             fi.default_grams
+      FROM foods f
+      LEFT JOIN food_ingredients fi ON fi.food_class_name = f.class_name
+      LEFT JOIN ingredients i ON i.name = fi.ingredient_name
+      $whereClause
+      ORDER BY f.display_name ASC
+    ''');
+
+    final Map<String, String>          displayNames = {};
+    final Map<String, List<Ingredient>> ingMap      = {};
+
+    for (final r in rows) {
+      final className  = r['class_name'] as String;
+      final displayName = r['display_name'] as String;
+      displayNames[className] = displayName;
+      if (r['ing_name'] != null) {
+        ingMap.putIfAbsent(className, () => []).add(Ingredient(
+          id:       r['ing_id'] as int?,
+          name:     r['ing_name'] as String,
+          calories: r['calories'] as double,
+          protein:  r['protein'] as double,
+          carbs:    r['carbs'] as double,
+          fat:      r['fat'] as double,
+          grams:    r['default_grams'] as double,
+        ));
+      }
     }
-    return result;
+
+    return displayNames.entries.map((e) => FoodEntry(
+      className:   e.key,
+      displayName: e.value,
+      ingredients: ingMap[e.key] ?? _fallbackIngredients(e.key),
+    )).toList();
   }
 
   // ── Log a meal ────────────────────────────────
@@ -263,7 +285,6 @@ class DatabaseService {
   // ── Get meal history ──────────────────────────
   Future<List<MealLog>> getMealHistory({
     required String userId,
-    int limit = 50,
   }) async {
     final db   = await database;
     final rows = await db.query(
@@ -271,7 +292,6 @@ class DatabaseService {
       where: 'user_id = ?',
       whereArgs: [userId],
       orderBy: 'logged_at DESC',
-      limit: limit,
     );
     return rows.map((r) => MealLog(
       id:               r['id'] as int,
@@ -399,6 +419,7 @@ class DatabaseService {
       {'name': 'Harissa paste',          'calories': 95.0,  'protein': 3.0,  'carbs': 10.0, 'fat': 5.0},
       {'name': 'Chermoula sauce',        'calories': 80.0,  'protein': 1.5,  'carbs': 4.0,  'fat': 6.5},
       // Oils & fats
+      {'name': 'Avocado',                'calories': 160.0, 'protein': 2.0,  'carbs': 8.5,  'fat': 14.7},
       {'name': 'Olive oil',              'calories': 884.0, 'protein': 0.0,  'carbs': 0.0,  'fat': 100.0},
       {'name': 'Vegetable oil',          'calories': 884.0, 'protein': 0.0,  'carbs': 0.0,  'fat': 100.0},
       // Nuts & seeds
@@ -733,6 +754,7 @@ class DatabaseService {
       {'food': 'fried_eggs',        'ingredient': 'Egg',                    'grams': 150.0},
       {'food': 'fried_eggs',        'ingredient': 'Butter',                 'grams': 10.0},
 
+      {'food': 'avocado_toast',     'ingredient': 'Avocado',                'grams': 100.0},
       {'food': 'avocado_toast',     'ingredient': 'Bread (white)',          'grams': 80.0},
       {'food': 'avocado_toast',     'ingredient': 'Lemon juice',            'grams': 5.0},
 

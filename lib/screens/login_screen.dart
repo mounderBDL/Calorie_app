@@ -117,7 +117,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 48),
 
                     // Title
-                    Text('Welcome\nback 👋',
+                    Text('Welcome\nback',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 36, fontWeight: FontWeight.w800,
                         height: 1.2, color: colors.textPrimary,

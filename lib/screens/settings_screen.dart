@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../services/database_service.dart';
+import '../services/preferences_service.dart';
 import '../theme/app_theme.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -81,7 +82,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final currentCtrl = TextEditingController();
     final newCtrl     = TextEditingController();
     final confirmCtrl = TextEditingController();
-    bool obscure = true;
+    bool obscureCurrent = true;
+    bool obscureNew     = true;
+    bool obscureConfirm = true;
     String? error;
 
     showDialog(
@@ -104,14 +107,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     style: GoogleFonts.dmSans(
                         fontSize: 12, color: Colors.red)),
                 ),
-              _passField(currentCtrl, 'Current password', obscure,
-                  () => setLocal(() => obscure = !obscure)),
+              _passField(currentCtrl, 'Current password', obscureCurrent,
+                  () => setLocal(() => obscureCurrent = !obscureCurrent)),
               const SizedBox(height: 12),
-              _passField(newCtrl, 'New password', obscure,
-                  () => setLocal(() => obscure = !obscure)),
+              _passField(newCtrl, 'New password', obscureNew,
+                  () => setLocal(() => obscureNew = !obscureNew)),
               const SizedBox(height: 12),
-              _passField(confirmCtrl, 'Confirm new password', obscure,
-                  () => setLocal(() => obscure = !obscure)),
+              _passField(confirmCtrl, 'Confirm new password', obscureConfirm,
+                  () => setLocal(() => obscureConfirm = !obscureConfirm)),
               const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
@@ -172,6 +175,105 @@ class _SettingsScreenState extends State<SettingsScreen> {
             horizontal: 16, vertical: 14),
       ),
     );
+
+  // ── Daily calorie goal ───────────────────────
+  void _showCalorieGoalDialog() {
+    final prefs = context.read<PreferencesService>();
+    final ctrl  = TextEditingController(text: '${prefs.dailyCalorieGoal}');
+    showDialog(
+      context: context,
+      builder: (_) => _StyledDialog(
+        title: 'Daily Calorie Goal',
+        icon:  Icons.local_fire_department_outlined,
+        child: Column(
+          children: [
+            TextField(
+              controller:   ctrl,
+              keyboardType: TextInputType.number,
+              style: GoogleFonts.dmSans(fontSize: 15),
+              decoration: InputDecoration(
+                hintText: '500 – 10000 kcal',
+                hintStyle: GoogleFonts.dmSans(fontSize: 14),
+                prefixIcon: const Icon(Icons.local_fire_department_outlined,
+                    size: 20, color: AppTheme.primary),
+                suffixText: 'kcal',
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 14),
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () async {
+                  final val = int.tryParse(ctrl.text.trim());
+                  if (val == null) return;
+                  await prefs.setDailyCalorieGoal(val);
+                  if (!mounted) return;
+                  Navigator.pop(context);
+                  _showSnack('Calorie goal updated to $val kcal ✅');
+                },
+                child: Text('Save',
+                    style: GoogleFonts.dmSans(fontWeight: FontWeight.w700)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Generic macro goal dialog ─────────────────
+  void _showMacroGoalDialog({
+    required String   title,
+    required IconData icon,
+    required int      current,
+    required String   hint,
+    required String   unit,
+    required Future<void> Function(int) onSave,
+  }) {
+    final ctrl = TextEditingController(text: '$current');
+    showDialog(
+      context: context,
+      builder: (_) => _StyledDialog(
+        title: title,
+        icon:  icon,
+        child: Column(
+          children: [
+            TextField(
+              controller:   ctrl,
+              keyboardType: TextInputType.number,
+              style: GoogleFonts.dmSans(fontSize: 15),
+              decoration: InputDecoration(
+                hintText: hint,
+                hintStyle: GoogleFonts.dmSans(fontSize: 14),
+                prefixIcon: Icon(icon, size: 20, color: AppTheme.primary),
+                suffixText: unit,
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 14),
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () async {
+                  final val = int.tryParse(ctrl.text.trim());
+                  if (val == null) return;
+                  await onSave(val);
+                  if (!mounted) return;
+                  Navigator.pop(context);
+                  _showSnack('$title updated to $val$unit ✅');
+                },
+                child: Text('Save',
+                    style: GoogleFonts.dmSans(fontWeight: FontWeight.w700)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   // ── Sign out ──────────────────────────────────
   void _confirmSignOut() {
@@ -375,6 +477,67 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 colors: colors,
                 showArrow: false,
               ).animate().fadeIn(delay: 250.ms).slideX(begin: 0.05),
+
+              const SizedBox(height: 24),
+
+              // ── Nutrition section ─────────────
+              _SectionTitle('Nutrition', colors),
+              const SizedBox(height: 10),
+
+              Builder(builder: (ctx) {
+                final prefs = ctx.watch<PreferencesService>();
+                return Column(children: [
+                  _SettingsTile(
+                    icon:     Icons.local_fire_department_outlined,
+                    title:    'Daily Calorie Goal',
+                    subtitle: '${prefs.dailyCalorieGoal} kcal',
+                    onTap:    _showCalorieGoalDialog,
+                    colors:   colors,
+                  ).animate().fadeIn(delay: 275.ms).slideX(begin: 0.05),
+                  _SettingsTile(
+                    icon:     Icons.grain_rounded,
+                    title:    'Daily Carbs Goal',
+                    subtitle: '${prefs.dailyCarbGoal} g',
+                    colors:   colors,
+                    onTap: () => _showMacroGoalDialog(
+                      title:   'Daily Carbs Goal',
+                      icon:    Icons.grain_rounded,
+                      current: prefs.dailyCarbGoal,
+                      hint:    '10 – 1000 g',
+                      unit:    'g',
+                      onSave:  context.read<PreferencesService>().setDailyCarbGoal,
+                    ),
+                  ).animate().fadeIn(delay: 300.ms).slideX(begin: 0.05),
+                  _SettingsTile(
+                    icon:     Icons.fitness_center_rounded,
+                    title:    'Daily Protein Goal',
+                    subtitle: '${prefs.dailyProteinGoal} g',
+                    colors:   colors,
+                    onTap: () => _showMacroGoalDialog(
+                      title:   'Daily Protein Goal',
+                      icon:    Icons.fitness_center_rounded,
+                      current: prefs.dailyProteinGoal,
+                      hint:    '10 – 500 g',
+                      unit:    'g',
+                      onSave:  context.read<PreferencesService>().setDailyProteinGoal,
+                    ),
+                  ).animate().fadeIn(delay: 325.ms).slideX(begin: 0.05),
+                  _SettingsTile(
+                    icon:     Icons.water_drop_outlined,
+                    title:    'Daily Fat Goal',
+                    subtitle: '${prefs.dailyFatGoal} g',
+                    colors:   colors,
+                    onTap: () => _showMacroGoalDialog(
+                      title:   'Daily Fat Goal',
+                      icon:    Icons.water_drop_outlined,
+                      current: prefs.dailyFatGoal,
+                      hint:    '5 – 500 g',
+                      unit:    'g',
+                      onSave:  context.read<PreferencesService>().setDailyFatGoal,
+                    ),
+                  ).animate().fadeIn(delay: 350.ms).slideX(begin: 0.05),
+                ]);
+              }),
 
               const SizedBox(height: 24),
 

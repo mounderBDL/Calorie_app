@@ -276,7 +276,7 @@ class _IngredientCardState extends State<_IngredientCard> {
             children: [
               _StepBtn(
                 icon: Icons.remove_rounded,
-                onTap: () => _adjust(-10),
+                onTap: () => _adjust(-5),
               ),
               SizedBox(
                 width: 52,
@@ -292,7 +292,7 @@ class _IngredientCardState extends State<_IngredientCard> {
               ),
               _StepBtn(
                 icon: Icons.add_rounded,
-                onTap: () => _adjust(10),
+                onTap: () => _adjust(5),
               ),
             ],
           ),
