@@ -182,17 +182,23 @@ class _SignupScreenState extends State<SignupScreen> {
 
                     const SizedBox(height: 32),
 
-                    Text('Create\naccount',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 36, fontWeight: FontWeight.w800,
-                        height: 1.2, color: colors.textPrimary,
+                    Center(
+                      child: Text('Create\naccount',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 36, fontWeight: FontWeight.w800,
+                          height: 1.2, color: colors.textPrimary,
+                        ),
                       ),
                     ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.15),
 
                     const SizedBox(height: 8),
-                    Text('Start tracking your meals and nutrition today',
-                      style: GoogleFonts.dmSans(
-                          fontSize: 14, color: colors.textSecondary),
+                    Center(
+                      child: Text('Start tracking your meals and nutrition today',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.dmSans(
+                            fontSize: 14, color: colors.textSecondary),
+                      ),
                     ).animate().fadeIn(delay: 150.ms),
 
                     const SizedBox(height: 36),
@@ -306,25 +312,10 @@ class _SignupScreenState extends State<SignupScreen> {
 
                     const SizedBox(height: 32),
 
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _signUp,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 18),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(50)),
-                        ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                width: 22, height: 22,
-                                child: CircularProgressIndicator(
-                                    color: Colors.white, strokeWidth: 2.5))
-                            : Text('Create Account',
-                                style: GoogleFonts.dmSans(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700)),
-                      ),
+                    _gradientButton(
+                      label: 'Create Account',
+                      isLoading: _isLoading,
+                      onPressed: _isLoading ? null : _signUp,
                     ).animate().fadeIn(delay: 400.ms),
 
                     const SizedBox(height: 24),
@@ -357,6 +348,60 @@ class _SignupScreenState extends State<SignupScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _gradientButton({
+    required String label,
+    required bool isLoading,
+    required VoidCallback? onPressed,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: !isLoading
+                ? [AppTheme.primary, AppTheme.accentWarm]
+                : [Colors.grey.shade300, Colors.grey.shade300],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+          borderRadius: BorderRadius.circular(50),
+          boxShadow: !isLoading
+              ? [
+                  BoxShadow(
+                    color: AppTheme.primary.withValues(alpha: 0.35),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ]
+              : [],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(50),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onPressed,
+              child: Center(
+                child: isLoading
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2.5))
+                    : Text(label,
+                        style: GoogleFonts.dmSans(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white)),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

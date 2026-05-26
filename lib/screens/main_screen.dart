@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../services/database_service.dart';
 import '../services/inference_service.dart';
+import '../services/preferences_service.dart';
 import '../theme/app_theme.dart';
 import 'home_screen.dart';
 import 'manual_entry_screen.dart';
@@ -53,6 +54,7 @@ class _MainScreenState extends State<MainScreen>
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId != null) {
       context.read<DatabaseService>().syncFromFirestore(userId: userId);
+      context.read<PreferencesService>().syncFromCloud(userId);
     }
   }
 

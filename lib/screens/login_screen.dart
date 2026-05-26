@@ -94,41 +94,34 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 52),
 
                     // Logo
-                    Row(
-                      children: [
-                        Container(
-                          width: 44, height: 44,
-                          decoration: BoxDecoration(
-                            color: AppTheme.primary,
-                            borderRadius: BorderRadius.circular(13),
-                          ),
-                          child: const Icon(Icons.restaurant_rounded,
-                              color: Colors.white, size: 22),
-                        ),
-                        const SizedBox(width: 12),
-                        Text('SmartDZMeal',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 22, fontWeight: FontWeight.w700,
-                            color: colors.textPrimary,
-                          )),
-                      ],
+                    Center(
+                      child: Image.asset(
+                        'assets/images/logo1-removebg-preview.png',
+                        height: 110,
+                      ),
                     ).animate().fadeIn(duration: 500.ms).slideY(begin: -0.2),
 
                     const SizedBox(height: 48),
 
                     // Title
-                    Text('Welcome\nback',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 36, fontWeight: FontWeight.w800,
-                        height: 1.2, color: colors.textPrimary,
+                    Center(
+                      child: Text('Welcome\nback',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 36, fontWeight: FontWeight.w800,
+                          height: 1.2, color: colors.textPrimary,
+                        ),
                       ),
                     ).animate().fadeIn(delay: 100.ms, duration: 500.ms)
                                 .slideY(begin: 0.15),
 
                     const SizedBox(height: 8),
-                    Text('Sign in to continue tracking your meals',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 14, color: colors.textSecondary,
+                    Center(
+                      child: Text('Sign in to continue tracking your meals',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 14, color: colors.textSecondary,
+                        ),
                       ),
                     ).animate().fadeIn(delay: 150.ms, duration: 500.ms),
 
@@ -209,25 +202,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 32),
 
                     // Sign in button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _signIn,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 18),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(50)),
-                        ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                width: 22, height: 22,
-                                child: CircularProgressIndicator(
-                                    color: Colors.white, strokeWidth: 2.5),
-                              )
-                            : Text('Sign In',
-                                style: GoogleFonts.dmSans(
-                                    fontSize: 16, fontWeight: FontWeight.w700)),
-                      ),
+                    _gradientButton(
+                      label: 'Sign In',
+                      isLoading: _isLoading,
+                      onPressed: _isLoading ? null : _signIn,
                     ).animate().fadeIn(delay: 300.ms, duration: 400.ms),
 
                     const SizedBox(height: 24),
@@ -281,6 +259,60 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _gradientButton({
+    required String label,
+    required bool isLoading,
+    required VoidCallback? onPressed,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: !isLoading
+                ? [AppTheme.primary, AppTheme.accentWarm]
+                : [Colors.grey.shade300, Colors.grey.shade300],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+          borderRadius: BorderRadius.circular(50),
+          boxShadow: !isLoading
+              ? [
+                  BoxShadow(
+                    color: AppTheme.primary.withValues(alpha: 0.35),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ]
+              : [],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(50),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onPressed,
+              child: Center(
+                child: isLoading
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2.5))
+                    : Text(label,
+                        style: GoogleFonts.dmSans(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white)),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

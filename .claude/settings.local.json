@@ -5,7 +5,8 @@
       "Bash(python -c ' *)",
       "Bash(flutter analyze *)",
       "Bash(flutter build *)",
-      "Bash(flutter clean *)"
+      "Bash(flutter clean *)",
+      "Bash(dart run *)"
     ]
   }
 }
