@@ -271,6 +271,32 @@ class ResultScreen extends StatelessWidget {
                       ),
                     ),
                   ).animate().fadeIn(delay: 350.ms, duration: 400.ms),
+
+                  const SizedBox(height: 20),
+
+                  // ── AI disclaimer ───────────────
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.info_outline_rounded,
+                          size: 13, color: colors.textSecondary),
+                      const SizedBox(width: 5),
+                      Flexible(
+                        child: Text(
+                          'AI results may not be 100% accurate — always verify the results',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 11.5,
+                            color: colors.textSecondary,
+                            fontStyle: FontStyle.italic,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ).animate().fadeIn(delay: 400.ms, duration: 400.ms),
+
+                  const SizedBox(height: 8),
                 ],
               ),
             ),

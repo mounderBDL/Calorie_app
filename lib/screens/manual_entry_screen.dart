@@ -11,8 +11,7 @@ import '../models/models.dart';
 String _getCategory(String className) {
   final n = className.toLowerCase();
   if (['couscous', 'chourba', 'bourek', 'koftafinal', 'harira',
-       'rechta', 'mhajeb', 'dolma', 'shorba_frik', 'berkoukes',
-       'mechoui', 'merguez'].any(n.contains)) { return 'Algerian'; }
+       'rechta', 'mhajeb', 'merguez'].any(n.contains)) { return 'Algerian'; }
   if (['cake', 'baklava', 'cheesecake', 'ice_cream', 'donut',
        'cookie', 'brownie', 'muffin', 'chocolate',
        'waffle', 'pancake'].any(n.contains)) { return 'Dessert'; }
@@ -290,8 +289,28 @@ class _FoodCard extends StatelessWidget {
   String get _emoji {
     final n = food.className.toLowerCase();
     if (['couscous', 'chourba', 'bourek', 'koftafinal', 'harira',
-         'rechta', 'mhajeb', 'dolma', 'shorba_frik', 'berkoukes',
-         'mechoui', 'merguez'].any(n.contains)) return '🇩🇿';
+         'rechta', 'mhajeb', 'merguez'].any(n.contains)) { return '🇩🇿'; }
+    if (['cake', 'baklava', 'cheesecake', 'ice_cream', 'pancake',
+         'chocolate'].any(n.contains))                    { return '🍰'; }
+    if (['salmon', 'fish', 'tuna', 'mussels'].any(n.contains)) { return '🐟'; }
+    if (['soup', 'lentil'].any(n.contains))               { return '🍲'; }
+    if (['salad', 'vegetable', 'green',
+         'spinach', 'broccoli'].any(n.contains))          { return '🥗'; }
+    if (['pizza'].any(n.contains))                        { return '🍕'; }
+    if (['burger', 'hamburger'].any(n.contains))          { return '🍔'; }
+    if (['hot_dog'].any(n.contains))                      { return '🌭'; }
+    if (['tacos'].any(n.contains))                        { return '🌮'; }
+    if (['pasta', 'lasagna', 'ramen',
+         'noodle'].any(n.contains))                       { return '🍝'; }
+    if (['rice', 'paella'].any(n.contains))               { return '🍚'; }
+    if (['chicken', 'steak', 'beef', 'lamb'].any(n.contains)) { return '🥩'; }
+    if (['egg', 'omelette'].any(n.contains))              { return '🍳'; }
+    if (['oatmeal', 'yogurt'].any(n.contains))            { return '🥣'; }
+    if (['toast', 'bread', 'garlic', 'hummus',
+         'falafel'].any(n.contains))                      { return '🥙'; }
+    if (['fries', 'french'].any(n.contains))              { return '🍟'; }
+    if (['banana'].any(n.contains))                       { return '🍌'; }
+    if (['apple', 'fruit'].any(n.contains))               { return '🍎'; }
     return '🍽';
   }
 

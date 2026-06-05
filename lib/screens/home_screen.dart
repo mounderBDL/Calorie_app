@@ -665,7 +665,7 @@ class _MealCard extends StatelessWidget {
   String get _emoji {
     final n = log.foodClassName.toLowerCase();
     if (['couscous','chourba','bourek','kofta','harira','rechta',
-         'mhajeb','dolma','shorba_frik','berkoukes','mechoui','merguez']
+         'mhajeb','merguez']
         .any(n.contains)) { return '🇩🇿'; }
     if (['cake','baklava','cheesecake','ice_cream','pancake','waffle',
          'donut','cookie','brownie','muffin','chocolate']

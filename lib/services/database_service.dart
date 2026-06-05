@@ -17,7 +17,7 @@ class DatabaseService {
     final dbPath = await getDatabasesPath();
     return openDatabase(
       join(dbPath, 'smartmeal.db'),
-      version: 2,
+      version: 3,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE ingredients (
@@ -74,6 +74,13 @@ class DatabaseService {
         'ingredient_name': 'Avocado',
         'default_grams': 100.0,
       }, conflictAlgorithm: ConflictAlgorithm.ignore);
+    }
+    if (oldVersion < 3) {
+      const removed = ['dolma', 'mechoui', 'berkoukes', 'shorba_frik'];
+      for (final name in removed) {
+        await db.delete('food_ingredients', where: 'food_class_name = ?', whereArgs: [name]);
+        await db.delete('foods',            where: 'class_name = ?',      whereArgs: [name]);
+      }
     }
   }
 
@@ -486,7 +493,7 @@ class DatabaseService {
       {'class_name': 'pizza',              'display_name': 'Pizza',                'category': 'main'},
       {'class_name': 'ramen',              'display_name': 'Ramen',                'category': 'main'},
       {'class_name': 'red_sauce_pasta',    'display_name': 'Red Sauce Pasta',      'category': 'main'},
-      {'class_name': 'rice_dishes',        'display_name': 'Rice Dishes',          'category': 'main'},
+      {'class_name': 'rice_dishes',        'display_name': 'Rice',                 'category': 'main'},
       {'class_name': 'steak',              'display_name': 'Steak',                'category': 'main'},
       {'class_name': 'tacos',              'display_name': 'Tacos',                'category': 'main'},
       {'class_name': 'white_sauce_pasta',  'display_name': 'White Sauce Pasta',    'category': 'main'},
@@ -494,11 +501,7 @@ class DatabaseService {
       {'class_name': 'harira',             'display_name': 'Harira 🇩🇿',           'category': 'algerian'},
       {'class_name': 'rechta',             'display_name': 'Rechta 🇩🇿',           'category': 'algerian'},
       {'class_name': 'mhajeb',             'display_name': 'Mhajeb 🇩🇿',           'category': 'algerian'},
-      {'class_name': 'dolma',              'display_name': 'Dolma 🇩🇿',            'category': 'algerian'},
-      {'class_name': 'mechoui',            'display_name': 'Mechoui 🇩🇿',          'category': 'algerian'},
       {'class_name': 'merguez_sandwich',   'display_name': 'Merguez Sandwich 🇩🇿', 'category': 'algerian'},
-      {'class_name': 'berkoukes',          'display_name': 'Berkoukes 🇩🇿',        'category': 'algerian'},
-      {'class_name': 'shorba_frik',        'display_name': 'Chorba Frik 🇩🇿',      'category': 'algerian'},
       // Everyday foods
       {'class_name': 'boiled_eggs',        'display_name': 'Boiled Eggs',          'category': 'breakfast'},
       {'class_name': 'fried_eggs',         'display_name': 'Fried Eggs',           'category': 'breakfast'},
@@ -582,39 +585,11 @@ class DatabaseService {
       {'food': 'mhajeb',            'ingredient': 'Bell pepper',            'grams': 40.0},
       {'food': 'mhajeb',            'ingredient': 'Vegetable oil',          'grams': 15.0},
 
-      {'food': 'dolma',             'ingredient': 'Grape leaves',           'grams': 80.0},
-      {'food': 'dolma',             'ingredient': 'Rice (white, cooked)',   'grams': 80.0},
-      {'food': 'dolma',             'ingredient': 'Beef (ground, cooked)',  'grams': 80.0},
-      {'food': 'dolma',             'ingredient': 'Onion',                  'grams': 25.0},
-      {'food': 'dolma',             'ingredient': 'Tomato sauce',           'grams': 50.0},
-      {'food': 'dolma',             'ingredient': 'Ras el Hanout',          'grams': 5.0},
-
-      {'food': 'mechoui',           'ingredient': 'Lamb shoulder (roasted)','grams': 200.0},
-      {'food': 'mechoui',           'ingredient': 'Olive oil',              'grams': 15.0},
-      {'food': 'mechoui',           'ingredient': 'Cumin (ground)',         'grams': 5.0},
-      {'food': 'mechoui',           'ingredient': 'Paprika',                'grams': 5.0},
-      {'food': 'mechoui',           'ingredient': 'Garlic',                 'grams': 10.0},
-
       {'food': 'merguez_sandwich',  'ingredient': 'Bread roll',             'grams': 80.0},
       {'food': 'merguez_sandwich',  'ingredient': 'Merguez sausage',        'grams': 100.0},
       {'food': 'merguez_sandwich',  'ingredient': 'Tomato',                 'grams': 30.0},
       {'food': 'merguez_sandwich',  'ingredient': 'Onion',                  'grams': 20.0},
       {'food': 'merguez_sandwich',  'ingredient': 'Harissa paste',          'grams': 10.0},
-
-      {'food': 'berkoukes',         'ingredient': 'Semolina (cooked)',      'grams': 120.0},
-      {'food': 'berkoukes',         'ingredient': 'Lamb (cooked)',          'grams': 100.0},
-      {'food': 'berkoukes',         'ingredient': 'Turnip',                 'grams': 50.0},
-      {'food': 'berkoukes',         'ingredient': 'Carrot',                 'grams': 40.0},
-      {'food': 'berkoukes',         'ingredient': 'Chickpeas (cooked)',     'grams': 40.0},
-      {'food': 'berkoukes',         'ingredient': 'Ras el Hanout',          'grams': 5.0},
-
-      {'food': 'shorba_frik',       'ingredient': 'Lamb (cooked)',          'grams': 80.0},
-      {'food': 'shorba_frik',       'ingredient': 'Semolina (cooked)',      'grams': 60.0},
-      {'food': 'shorba_frik',       'ingredient': 'Chickpeas (cooked)',     'grams': 40.0},
-      {'food': 'shorba_frik',       'ingredient': 'Tomato',                 'grams': 60.0},
-      {'food': 'shorba_frik',       'ingredient': 'Onion',                  'grams': 30.0},
-      {'food': 'shorba_frik',       'ingredient': 'Ras el Hanout',          'grams': 5.0},
-      {'food': 'shorba_frik',       'ingredient': 'Cilantro',               'grams': 8.0},
 
       // ── MODEL CLASSES ──
       {'food': 'baklava',           'ingredient': 'Phyllo dough',           'grams': 30.0},
