@@ -1,0 +1,2163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SmartDzMeal — AI Nutrition Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet"/>
+  <style>
+    /* ── Variables ─────────────────────────────── */
+    :root {
+      --coral:   #E8956D;
+      --warm:    #D4785A;
+      --gold:    #F59E0B;
+      --purple:  #7C3AED;
+      --blue:    #0EA5E9;
+      --emerald: #059669;
+      --dark:    #0D0A18;
+      --dark2:   #1A1430;
+      --card:    #FFFFFF;
+      --bg:      #FAF8F5;
+      --text:    #2D1B0E;
+      --muted:   #9E7D6A;
+      --divider: #EDE8E3;
+      --radius:  20px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
+    h1,h2,h3,h4 { font-family: 'Plus Jakarta Sans', sans-serif; }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--dark); }
+    ::-webkit-scrollbar-thumb { background: var(--coral); border-radius: 2px; }
+
+
+    /* ── Cursor glow ───────────────────────────── */
+    #cursor-glow {
+      position: fixed; width: 400px; height: 400px;
+      border-radius: 50%; pointer-events: none; z-index: 1;
+      background: radial-gradient(circle, rgba(232,149,109,.07) 0%, transparent 70%);
+      transform: translate(-50%, -50%);
+      transition: transform .08s linear;
+    }
+
+    /* ── Navbar ────────────────────────────────── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      padding: 16px 64px;
+      display: flex; align-items: center; justify-content: space-between;
+      transition: background .4s, box-shadow .4s;
+    }
+    nav.scrolled {
+      background: rgba(13,10,24,.85);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 1px 0 rgba(255,255,255,.06);
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-logo img { height: 36px; }
+    .nav-logo-text {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800; font-size: 18px; color: #fff;
+    }
+    .nav-live {
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(76,175,80,.15); border: 1px solid rgba(76,175,80,.3);
+      border-radius: 50px; padding: 4px 12px;
+      font-size: 11px; font-weight: 700; color: #4CAF50;
+    }
+    .nav-live-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #4CAF50; animation: pulse-dot 1.5s infinite;
+    }
+    @keyframes pulse-dot {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: .5; transform: scale(.7); }
+    }
+    .nav-links { display: flex; gap: 28px; list-style: none; }
+    .nav-links a {
+      text-decoration: none; color: rgba(255,255,255,.55);
+      font-size: 14px; font-weight: 500;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: #fff; }
+    .nav-cta {
+      background: linear-gradient(135deg, var(--coral), var(--warm));
+      color: #fff; border: none; border-radius: 50px;
+      padding: 10px 24px; font-size: 14px; font-weight: 700;
+      font-family: 'DM Sans', sans-serif; cursor: pointer;
+      box-shadow: 0 4px 20px rgba(232,149,109,.4);
+      transition: transform .2s, box-shadow .2s;
+    }
+    .nav-cta:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 8px 28px rgba(232,149,109,.5); }
+
+    /* ── Hero ──────────────────────────────────── */
+    #hero {
+      position: relative; z-index: 2;
+      min-height: 100vh; display: flex; align-items: center;
+      padding: 120px 64px 80px; gap: 60px;
+      background: linear-gradient(135deg, #0D0A18 0%, #1A1030 50%, #0D1A2E 100%);
+      overflow: hidden;
+    }
+
+    /* animated mesh behind hero */
+    #hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 70% 50%, rgba(124,58,237,.18) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 60% at 20% 30%, rgba(232,149,109,.15) 0%, transparent 55%),
+        radial-gradient(ellipse 40% 40% at 80% 80%, rgba(14,165,233,.12) 0%, transparent 50%);
+      animation: mesh-shift 10s ease-in-out infinite alternate;
+    }
+    @keyframes mesh-shift {
+      from { opacity: 1; }
+      to   { opacity: .6; filter: hue-rotate(20deg); }
+    }
+
+    .hero-left { flex: 1; max-width: 580px; position: relative; z-index: 3; }
+
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(124,58,237,.2); border: 1px solid rgba(124,58,237,.4);
+      border-radius: 50px; padding: 6px 16px;
+      font-size: 13px; font-weight: 700; color: #a78bfa;
+      margin-bottom: 28px;
+      animation: badge-glow 3s ease-in-out infinite alternate;
+    }
+    @keyframes badge-glow {
+      from { box-shadow: 0 0 0 rgba(124,58,237,0); }
+      to   { box-shadow: 0 0 20px rgba(124,58,237,.35); }
+    }
+
+    .hero-title {
+      font-size: clamp(44px, 5.5vw, 72px); font-weight: 800; line-height: 1.08;
+      color: #fff; margin-bottom: 24px;
+    }
+    .hero-title .line2 {
+      display: block; position: relative;
+    }
+    #typewriter {
+      background: linear-gradient(135deg, var(--coral), var(--gold));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .cursor-blink {
+      display: inline-block; width: 3px; height: .9em;
+      background: var(--coral); margin-left: 4px;
+      animation: blink .8s step-end infinite;
+      vertical-align: text-bottom;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    .hero-sub {
+      font-size: 18px; line-height: 1.75; color: rgba(255,255,255,.55);
+      margin-bottom: 40px; max-width: 480px;
+    }
+    .hero-sub strong { color: rgba(255,255,255,.85); font-weight: 600; }
+
+    .hero-buttons { display: flex; gap: 14px; flex-wrap: wrap; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--coral), var(--warm));
+      color: #fff; border: none; border-radius: 50px;
+      padding: 16px 36px; font-size: 16px; font-weight: 700;
+      font-family: 'DM Sans', sans-serif; cursor: pointer;
+      box-shadow: 0 6px 28px rgba(232,149,109,.45);
+      transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s;
+      text-decoration: none; display: inline-block;
+      animation: btn-pulse 3s ease-in-out infinite;
+    }
+    @keyframes btn-pulse {
+      0%,100% { box-shadow: 0 6px 28px rgba(232,149,109,.45); }
+      50%      { box-shadow: 0 6px 40px rgba(232,149,109,.7); }
+    }
+    .btn-primary:hover {
+      transform: translateY(-3px) scale(1.03);
+      box-shadow: 0 14px 36px rgba(232,149,109,.6);
+      animation: none;
+    }
+
+    .btn-ghost {
+      background: rgba(255,255,255,.06); color: rgba(255,255,255,.8);
+      border: 1px solid rgba(255,255,255,.15); border-radius: 50px;
+      padding: 15px 32px; font-size: 16px; font-weight: 600;
+      font-family: 'DM Sans', sans-serif; cursor: pointer;
+      transition: background .2s, border-color .2s, transform .2s;
+      text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+      backdrop-filter: blur(8px);
+    }
+    .btn-ghost:hover {
+      background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.3);
+      transform: translateY(-2px);
+    }
+
+    .hero-stats {
+      display: flex; gap: 36px; margin-top: 48px;
+      padding-top: 36px; border-top: 1px solid rgba(255,255,255,.08);
+    }
+    .stat-num {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 30px; font-weight: 800; color: #fff;
+    }
+    .stat-num .accent { color: var(--coral); }
+    .stat-label { font-size: 12px; color: rgba(255,255,255,.4); margin-top: 2px; }
+
+    /* ── Phone mockup ──────────────────────────── */
+    .hero-right {
+      flex: 1; display: flex; justify-content: center; align-items: center;
+      position: relative; z-index: 3;
+    }
+    .phone-scene { position: relative; }
+
+    .phone-glow {
+      position: absolute; width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(232,149,109,.35) 0%, transparent 70%);
+      top: 50%; left: 50%; transform: translate(-50%,-50%);
+      animation: glow-pulse 3s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes glow-pulse {
+      0%,100% { opacity: .6; transform: translate(-50%,-50%) scale(1); }
+      50%      { opacity: 1; transform: translate(-50%,-50%) scale(1.15); }
+    }
+
+    .phone-wrap {
+      position: relative; z-index: 2;
+      will-change: transform;
+    }
+    @keyframes float {
+      0%,100% { transform: translateY(0) rotate(-2deg); }
+      50%      { transform: translateY(-20px) rotate(-2deg); }
+    }
+
+    .phone {
+      width: 255px; height: 510px; background: #0d0a18;
+      border-radius: 44px;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,.08),
+        0 40px 80px rgba(0,0,0,.6),
+        inset 0 0 0 1px rgba(255,255,255,.04);
+      overflow: hidden; position: relative;
+    }
+    .phone-notch {
+      position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+      width: 88px; height: 20px; background: #0d0a18;
+      border-radius: 0 0 14px 14px; z-index: 10;
+    }
+    .phone-screen {
+      width: 100%; height: 100%;
+      background: linear-gradient(160deg, #FAF8F5, #FFF3ED);
+      padding: 42px 12px 14px;
+      display: flex; flex-direction: column; gap: 9px;
+      position: relative; overflow: hidden;
+    }
+
+
+    .mock-greeting { font-size: 9px; color: #9E7D6A; font-weight: 500; font-family: 'DM Sans', sans-serif; }
+    .mock-name { font-size: 13px; font-weight: 700; color: #2D1B0E; font-family: 'Plus Jakarta Sans', sans-serif; }
+
+    .mock-ring-card {
+      background: linear-gradient(135deg, var(--coral), var(--warm));
+      border-radius: 16px; padding: 12px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .mock-ring {
+      width: 52px; height: 52px; border-radius: 50%;
+      border: 5px solid rgba(255,255,255,.25); border-top-color: #fff;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .mock-ring-inner { font-size: 11px; font-weight: 800; color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; }
+    .mock-ring-label { font-size: 8px; color: rgba(255,255,255,.7); font-family: 'DM Sans', sans-serif; }
+    .mock-ring-val { font-size: 12px; font-weight: 700; color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; }
+
+    .mock-macros { display: flex; gap: 5px; }
+    .mock-macro {
+      flex: 1; background: #fff; border-radius: 9px;
+      padding: 6px 4px; text-align: center;
+      box-shadow: 0 2px 8px rgba(45,27,14,.06);
+    }
+    .mock-macro-val { font-size: 10px; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; }
+    .mock-macro-label { font-size: 7px; color: #9E7D6A; font-family: 'DM Sans', sans-serif; }
+
+    .mock-meal-label { font-size: 9px; font-weight: 700; color: #2D1B0E; font-family: 'Plus Jakarta Sans', sans-serif; }
+    .mock-meal-card {
+      background: #fff; border-radius: 11px; padding: 8px 9px;
+      display: flex; align-items: center; gap: 7px;
+      box-shadow: 0 2px 8px rgba(45,27,14,.05);
+    }
+    .mock-meal-icon {
+      width: 30px; height: 30px; border-radius: 8px;
+      background: rgba(232,149,109,.1);
+      display: flex; align-items: center; justify-content: center; font-size: 15px;
+    }
+    .mock-meal-name { font-size: 9px; font-weight: 600; color: #2D1B0E; font-family: 'DM Sans', sans-serif; }
+    .mock-meal-sub  { font-size: 7px; color: #9E7D6A; font-family: 'DM Sans', sans-serif; }
+    .mock-meal-kcal { margin-left: auto; font-size: 10px; font-weight: 700; color: var(--coral); font-family: 'Plus Jakarta Sans', sans-serif; }
+
+    /* floating badges */
+    .float-badge {
+      position: absolute; background: var(--card);
+      border-radius: 16px; padding: 10px 14px;
+      box-shadow: 0 16px 40px rgba(0,0,0,.25);
+      display: flex; align-items: center; gap: 8px;
+      font-family: 'DM Sans', sans-serif; white-space: nowrap;
+      will-change: transform;
+    }
+    .badge-1 { top: 40px; right: -50px; }
+    .badge-2 { bottom: 90px; left: -60px; }
+    .badge-3 { top: 48%; left: -65px; }
+    @keyframes float-b1 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+    @keyframes float-b2 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(10px)} }
+    .badge-icon { font-size: 20px; }
+    .badge-top  { font-size: 10px; color: var(--muted); }
+    .badge-bot  { font-size: 13px; font-weight: 700; color: var(--text); }
+    .badge-dot  { width: 8px; height: 8px; border-radius: 50%; margin-left: auto; }
+
+
+    /* ── Sections ──────────────────────────────── */
+    .light-section { background: var(--bg); }
+    .dark-section  { background: var(--dark); }
+
+    .section-inner { max-width: 1100px; margin: 0 auto; padding: 0 64px; }
+
+    .section-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+      text-transform: uppercase; margin-bottom: 12px;
+    }
+    .section-tag.light { color: var(--coral); }
+    .section-tag.dark  { color: var(--coral); }
+    .section-tag::before { content: '◆'; font-size: 8px; }
+
+    .section-title {
+      font-size: clamp(30px, 3.5vw, 48px); font-weight: 800; line-height: 1.15;
+      margin-bottom: 14px;
+    }
+    .section-title.light { color: var(--text); }
+    .section-title.dark  { color: #fff; }
+
+    .section-sub { font-size: 17px; line-height: 1.75; max-width: 540px; }
+    .section-sub.light { color: var(--muted); }
+    .section-sub.dark  { color: rgba(255,255,255,.5); }
+
+    /* ── Reveal ────────────────────────────────── */
+    .reveal, .reveal-l, .reveal-r {
+      opacity: 0; transition: opacity .7s ease, transform .7s ease;
+    }
+    .reveal   { transform: translateY(40px); }
+    .reveal-l { transform: translateX(-50px); }
+    .reveal-r { transform: translateX(50px); }
+    .reveal.on, .reveal-l.on, .reveal-r.on { opacity: 1; transform: none; }
+    .d1{transition-delay:.1s} .d2{transition-delay:.2s}
+    .d3{transition-delay:.3s} .d4{transition-delay:.4s}
+    .d5{transition-delay:.5s} .d6{transition-delay:.6s}
+
+    /* ── Features ──────────────────────────────── */
+    #features { padding: 120px 0; }
+
+    .features-header { text-align: center; margin-bottom: 64px; }
+    .features-header .section-sub { margin: 0 auto; }
+
+    .features-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+    }
+
+    .feature-card {
+      background: var(--card); border-radius: var(--radius);
+      padding: 32px 26px; border: 1px solid var(--divider);
+      position: relative; overflow: hidden; cursor: default;
+      transition: transform .3s cubic-bezier(.34,1.56,.64,1), box-shadow .3s;
+    }
+    .feature-card:hover { transform: translateY(-10px) scale(1.01); }
+
+    /* gradient border on hover */
+    .feature-card::after {
+      content: ''; position: absolute; inset: 0;
+      border-radius: var(--radius); padding: 1.5px;
+      background: var(--gb, linear-gradient(135deg, var(--coral), var(--gold)));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor; mask-composite: exclude;
+      opacity: 0; transition: opacity .3s;
+    }
+    .feature-card:hover::after { opacity: 1; }
+
+    /* spotlight overlay */
+    .feature-card .spotlight {
+      position: absolute; inset: 0; border-radius: var(--radius);
+      pointer-events: none; opacity: 0; transition: opacity .3s;
+    }
+    .feature-card:hover .spotlight { opacity: 1; }
+
+    .feature-icon {
+      width: 54px; height: 54px; border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 18px;
+      transition: transform 0.35s cubic-bezier(.34,1.56,.64,1);
+    }
+    .feature-card:hover .feature-icon { transform: scale(1.15) rotate(-4deg); }
+    .feature-icon svg { display: block; }
+
+    .feature-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .feature-title { font-size: 19px; font-weight: 700; color: var(--text); }
+    .dz-badge {
+      font-size: 10px; font-weight: 800; letter-spacing: .5px;
+      background: rgba(232,149,109,.12); color: var(--coral);
+      border: 1px solid rgba(232,149,109,.25);
+      border-radius: 6px; padding: 2px 7px;
+    }
+    .feature-desc  { font-size: 14px; color: var(--muted); line-height: 1.7; }
+    .feature-chip  {
+      display: inline-block; margin-top: 14px;
+      font-size: 11px; font-weight: 700; padding: 4px 12px;
+      border-radius: 20px;
+    }
+    /* Food mini chips (card 1) */
+    .food-mini-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+    .food-mini-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: rgba(232,149,109,.07); border: 1px solid rgba(232,149,109,.18);
+      border-radius: 20px; padding: 4px 11px;
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      transition: background .2s, color .2s;
+    }
+    .feature-card:hover .food-mini-chip { background: rgba(232,149,109,.13); color: var(--text); }
+
+    /* card-specific colors */
+    .fc-purple .feature-icon { background: rgba(124,58,237,.1); color: var(--purple); }
+    .fc-purple .feature-chip { background: rgba(124,58,237,.1); color: var(--purple); }
+    .fc-purple { --gb: linear-gradient(135deg, var(--purple), #a78bfa); }
+
+    .fc-emerald .feature-icon { background: rgba(5,150,105,.1); color: var(--emerald); }
+    .fc-emerald .feature-chip { background: rgba(5,150,105,.1); color: var(--emerald); }
+    .fc-emerald { --gb: linear-gradient(135deg, var(--emerald), #34d399); }
+
+    .fc-coral .feature-icon { background: rgba(232,149,109,.1); color: var(--coral); }
+    .fc-coral .feature-chip { background: rgba(232,149,109,.1); color: var(--coral); }
+    .fc-coral { --gb: linear-gradient(135deg, var(--coral), var(--gold)); }
+
+    .fc-blue .feature-icon { background: rgba(14,165,233,.1); color: var(--blue); }
+    .fc-blue .feature-chip { background: rgba(14,165,233,.1); color: var(--blue); }
+    .fc-blue { --gb: linear-gradient(135deg, var(--blue), #38bdf8); }
+
+    .fc-gold .feature-icon { background: rgba(245,158,11,.1); color: var(--gold); }
+    .fc-gold .feature-chip { background: rgba(245,158,11,.1); color: var(--gold); }
+    .fc-gold { --gb: linear-gradient(135deg, var(--gold), #fcd34d); }
+
+    /* ── How it works (DARK) ───────────────────── */
+    #howitworks { padding: 120px 0; }
+
+    .steps-layout {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 80px; align-items: center; margin-top: 60px;
+    }
+    .steps-list { display: flex; flex-direction: column; gap: 6px; }
+
+    .step {
+      display: flex; gap: 18px; align-items: flex-start;
+      padding: 22px 20px; border-radius: 18px;
+      border: 1px solid transparent;
+      transition: background .3s, border-color .3s, transform .3s;
+      cursor: default;
+    }
+    .step:hover, .step.active {
+      background: rgba(255,255,255,.04);
+      border-color: rgba(255,255,255,.08);
+      transform: translateX(6px);
+    }
+
+    .step-num {
+      width: 46px; height: 46px; min-width: 46px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 18px; font-weight: 800; color: #fff;
+    }
+    .step:nth-child(1) .step-num { background: linear-gradient(135deg, var(--coral), var(--warm)); box-shadow: 0 6px 20px rgba(232,149,109,.4); }
+    .step:nth-child(2) .step-num { background: linear-gradient(135deg, var(--purple), #a78bfa); box-shadow: 0 6px 20px rgba(124,58,237,.4); }
+    .step:nth-child(3) .step-num { background: linear-gradient(135deg, var(--emerald), #34d399); box-shadow: 0 6px 20px rgba(5,150,105,.4); }
+
+    .step-title { font-size: 17px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+    .step-desc  { font-size: 14px; color: rgba(255,255,255,.45); line-height: 1.65; }
+
+    /* mini phone in how-it-works */
+    .hw-phone {
+      position: relative;
+    }
+    /* Screenshots crossfade */
+    .hw-screenshots {
+      position: relative;
+      width: 220px; height: 440px;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0,0,0,.5);
+    }
+    .hw-shot {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover; object-position: top;
+      opacity: 0;
+      transition: opacity 0.45s cubic-bezier(.22,1,.36,1);
+    }
+    .hw-shot.active { opacity: 1; }
+    .hw-screen {
+      width: 100%; height: 100%;
+      background: #111827; /* dark mode app */
+      padding: 36px 12px 12px;
+      display: flex; flex-direction: column; gap: 10px;
+      position: relative; overflow: hidden;
+    }
+    .hw-scan-overlay {
+      position: absolute; inset: 0; background: rgba(0,0,0,.6);
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 8px;
+    }
+    .hw-scan-box {
+      width: 100px; height: 100px; border-radius: 12px;
+      border: 2px solid rgba(124,58,237,.6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 48px; position: relative;
+    }
+    .hw-scan-box::before, .hw-scan-box::after {
+      content: ''; position: absolute;
+      width: 16px; height: 16px; border-color: var(--purple); border-style: solid;
+    }
+    .hw-scan-box::before { top: -2px; left: -2px; border-width: 3px 0 0 3px; border-radius: 3px 0 0 0; }
+    .hw-scan-box::after  { bottom: -2px; right: -2px; border-width: 0 3px 3px 0; border-radius: 0 0 3px 0; }
+    .hw-scan-line {
+      position: absolute; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--purple), transparent);
+      animation: scan 2.5s ease-in-out infinite;
+    }
+    .hw-scan-label { font-size: 11px; color: rgba(255,255,255,.6); font-family: 'DM Sans', sans-serif; }
+
+    /* result card inside hw phone */
+    .hw-result {
+      position: absolute; bottom: 16px; left: 12px; right: 12px;
+      background: #1f2937; border-radius: 14px; padding: 12px;
+      animation: slide-up 3s ease-in-out infinite;
+    }
+    @keyframes slide-up {
+      0%,40%    { transform: translateY(80px); opacity: 0; }
+      50%,90%   { transform: translateY(0); opacity: 1; }
+      100%      { transform: translateY(80px); opacity: 0; }
+    }
+    .hw-result-row { display: flex; align-items: center; gap: 8px; }
+    .hw-result-emoji { font-size: 24px; }
+    .hw-result-name  { font-size: 13px; font-weight: 700; color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; }
+    .hw-result-conf  { font-size: 10px; color: var(--emerald); font-weight: 600; font-family: 'DM Sans', sans-serif; }
+    .hw-bar { height: 4px; background: rgba(255,255,255,.1); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+    .hw-bar-fill { height: 100%; width: 87%; border-radius: 2px; background: linear-gradient(90deg, var(--coral), var(--gold)); }
+
+    /* ── Stats (DARK) ──────────────────────────── */
+    #stats { padding: 80px 0; border-top: 1px solid rgba(255,255,255,.05); }
+
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px;
+    }
+    .stat-card {
+      padding: 36px 28px; text-align: center;
+      border-right: 1px solid rgba(255,255,255,.06);
+    }
+    .stat-card:last-child { border-right: none; }
+    .big-num {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 52px; font-weight: 800; line-height: 1;
+      margin-bottom: 8px;
+    }
+    .stat-desc { font-size: 14px; color: rgba(255,255,255,.4); font-weight: 500; }
+
+    /* ── Tech Stack (DARK) ─────────────────────── */
+    #tech { padding: 100px 0; border-top: 1px solid rgba(255,255,255,.05); }
+
+    .tech-header { text-align: center; margin-bottom: 52px; }
+
+    .tech-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+
+    .tech-card {
+      background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07);
+      border-radius: 18px; padding: 26px 14px; text-align: center;
+      transition: background .3s, transform .3s, box-shadow .3s;
+      cursor: default;
+    }
+    .tech-card:hover {
+      background: rgba(255,255,255,.08);
+      transform: translateY(-8px);
+    }
+    .tech-emoji { font-size: 34px; margin-bottom: 12px; display: block; }
+    .tech-name { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+    .tech-role { font-size: 12px; color: rgba(255,255,255,.35); }
+
+    .tc-1:hover { box-shadow: 0 8px 30px rgba(14,165,233,.2); border-color: rgba(14,165,233,.2); }
+    .tc-2:hover { box-shadow: 0 8px 30px rgba(124,58,237,.2); border-color: rgba(124,58,237,.2); }
+    .tc-3:hover { box-shadow: 0 8px 30px rgba(232,149,109,.2); border-color: rgba(232,149,109,.2); }
+    .tc-4:hover { box-shadow: 0 8px 30px rgba(245,158,11,.2); border-color: rgba(245,158,11,.2); }
+    .tc-5:hover { box-shadow: 0 8px 30px rgba(5,150,105,.2); border-color: rgba(5,150,105,.2); }
+
+    /* ── Algerian (EMERALD) ────────────────────── */
+    #algerian { padding: 100px 0; background: var(--bg); }
+
+    .algerian-card {
+      border-radius: 32px; padding: 64px;
+      background: linear-gradient(135deg, #064e3b 0%, #065f46 40%, #047857 100%);
+      position: relative; overflow: hidden;
+      display: flex; align-items: center; gap: 60px;
+    }
+    .algerian-card::before {
+      content: '🇩🇿';
+      position: absolute; right: 50px; top: 50%; transform: translateY(-50%);
+      font-size: 180px; opacity: .08; pointer-events: none;
+      animation: flag-float 6s ease-in-out infinite alternate;
+    }
+    @keyframes flag-float {
+      from { transform: translateY(-50%) rotate(-3deg); }
+      to   { transform: translateY(-52%) rotate(3deg); }
+    }
+    .algerian-orb {
+      position: absolute; width: 300px; height: 300px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(52,211,153,.2), transparent 70%);
+      top: -80px; left: -60px; animation: drift 10s ease-in-out infinite alternate;
+    }
+
+    .algerian-tag {
+      font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+      text-transform: uppercase; color: rgba(255,255,255,.6); margin-bottom: 12px;
+    }
+    .algerian-title {
+      font-size: clamp(28px, 3vw, 44px); font-weight: 800;
+      color: #fff; line-height: 1.15; margin-bottom: 16px;
+    }
+    .algerian-desc { font-size: 16px; color: rgba(255,255,255,.7); line-height: 1.7; max-width: 480px; }
+
+    .food-pills { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+    .food-pill {
+      background: rgba(255,255,255,.12); backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,.2); border-radius: 50px;
+      padding: 7px 16px; font-size: 13px; font-weight: 600; color: #fff;
+      transition: background .2s, transform .2s;
+    }
+    .food-pill:hover { background: rgba(255,255,255,.22); transform: translateY(-2px); }
+
+    /* ── Footer ────────────────────────────────── */
+    footer {
+      background: var(--dark); color: rgba(255,255,255,.4);
+      padding: 48px 64px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-top: 1px solid rgba(255,255,255,.05);
+    }
+    .footer-logo { display: flex; align-items: center; gap: 10px; }
+    .footer-logo img { height: 30px; filter: brightness(0) invert(1); opacity: .6; }
+    .footer-brand { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 15px; color: rgba(255,255,255,.7); }
+    .footer-text { font-size: 13px; }
+    .footer-chips { display: flex; gap: 8px; }
+    .chip {
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.08);
+      border-radius: 50px; padding: 5px 12px;
+      font-size: 11px; font-weight: 600; color: rgba(255,255,255,.5);
+    }
+
+    /* ── Hamburger button ─────────────────────── */
+    .nav-hamburger {
+      display: none;
+      position: fixed; top: 14px; right: 24px; z-index: 103;
+      flex-direction: column; justify-content: center; gap: 5px;
+      background: none; border: none; cursor: pointer;
+      padding: 6px;
+    }
+    .nav-hamburger span {
+      display: block; width: 22px; height: 2px;
+      background: #fff; border-radius: 2px;
+      transition: transform .3s cubic-bezier(.22,1,.36,1), opacity .2s;
+    }
+    .nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .nav-hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+    .nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* ── Mobile menu overlay ─────────────────── */
+    #mobile-menu {
+      position: fixed; inset: 0; z-index: 101;
+      background: rgba(13,10,24,.96);
+      backdrop-filter: blur(28px) saturate(1.5);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 24px 40px;
+      opacity: 0;
+      transition: opacity 0.18s ease;
+      pointer-events: none;
+    }
+    #mobile-menu.open { opacity: 1; pointer-events: all; }
+
+    /* Coral accent line sweeps in at top */
+    #mobile-menu::before {
+      content: '';
+      position: absolute; top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--coral), var(--gold), transparent);
+      border-radius: 2px;
+      transition: width 0.55s cubic-bezier(.22,1,.36,1) 0.08s;
+    }
+    #mobile-menu.open::before { width: 55%; }
+
+    /* Links list */
+    .mobile-links {
+      list-style: none; display: flex; flex-direction: column;
+      align-items: center; gap: 0;
+      margin-bottom: 36px; width: 100%;
+    }
+
+    /* Every item starts invisible and shifted down */
+    .mobile-links li, .mob-cta {
+      opacity: 0;
+      transform: translateY(48px);
+      transition: opacity 0.5s cubic-bezier(.34,1.4,.64,1),
+                  transform 0.5s cubic-bezier(.34,1.4,.64,1);
+    }
+
+    /* Stagger in on open */
+    #mobile-menu.open .mobile-links li:nth-child(1) { opacity:1; transform:none; transition-delay:.07s; }
+    #mobile-menu.open .mobile-links li:nth-child(2) { opacity:1; transform:none; transition-delay:.15s; }
+    #mobile-menu.open .mobile-links li:nth-child(3) { opacity:1; transform:none; transition-delay:.23s; }
+    #mobile-menu.open .mobile-links li:nth-child(4) { opacity:1; transform:none; transition-delay:.31s; }
+    #mobile-menu.open .mobile-links li:nth-child(5) { opacity:1; transform:none; transition-delay:.39s; }
+    #mobile-menu.open .mob-cta                       { opacity:1; transform:none; transition-delay:.47s; }
+
+    /* Link style */
+    .mobile-links a {
+      display: block; text-align: center;
+      padding: 15px 24px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 28px; font-weight: 700;
+      color: rgba(255,255,255,.45);
+      text-decoration: none; width: 100%;
+      letter-spacing: -0.5px;
+      transition: color 0.2s;
+      position: relative;
+    }
+    .mobile-links a::after {
+      content: '';
+      position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
+      width: 0; height: 2px; border-radius: 1px;
+      background: linear-gradient(90deg, var(--coral), var(--gold));
+      transition: width 0.25s cubic-bezier(.22,1,.36,1);
+    }
+    .mobile-links a:hover { color: #fff; }
+    .mobile-links a:hover::after { width: 48px; }
+
+    /* CTA inside menu */
+    .mob-cta {
+      width: 100%; text-align: center;
+      background: linear-gradient(135deg, var(--coral), var(--warm));
+      color: #fff; border: none; border-radius: 50px;
+      padding: 16px 36px; font-size: 16px; font-weight: 700;
+      font-family: 'DM Sans', sans-serif; cursor: pointer;
+      box-shadow: 0 6px 28px rgba(232,149,109,.45);
+    }
+
+    /* ── Responsive ────────────────────────────── */
+    @media (max-width: 960px) {
+      nav { padding: 14px 68px 14px 24px; }
+      .nav-links { display: none; }
+      .nav-cta  { display: none; }
+      .nav-hamburger { display: flex; }
+      #hero { flex-direction: column; padding: 110px 24px 60px; text-align: center; }
+      .hero-sub, .hero-buttons { margin: 0 auto 20px; justify-content: center; }
+      .hero-stats { justify-content: center; }
+      .hero-right { display: none; }
+      .section-inner { padding: 0 24px; }
+      .features-grid { grid-template-columns: 1fr 1fr; }
+      .steps-layout { grid-template-columns: 1fr; }
+      .hw-phone-wrap { display: none; }
+      .stats-grid { grid-template-columns: repeat(2,1fr); }
+      .tech-grid { grid-template-columns: repeat(3,1fr); }
+      .algerian-card { padding: 36px 28px; flex-direction: column; gap: 24px; }
+      .algerian-card::before { display: none; }
+      footer { flex-direction: column; gap: 16px; text-align: center; padding: 36px 24px; }
+      /* Section vertical padding */
+      #features, #stats, #tech, #algerian,
+      #pricing, #roadmap, #testimonials, #faq { padding: 72px 0; }
+      /* Pro banner */
+      .pro-banner { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .pro-cta-btn { margin-left: 0; width: 100%; text-align: center; }
+      /* Progress track */
+      .steps-progress-track { display: none; }
+      /* Footer bottom */
+      .footer-bottom { padding: 16px 24px; }
+    }
+    @media (max-width: 600px) {
+      .features-grid { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(2,1fr); }
+      .tech-grid { grid-template-columns: repeat(2,1fr); }
+      .big-num { font-size: 38px; }
+    }
+    /* ── Extra small phones ──────────────────── */
+    @media (max-width: 480px) {
+      nav { padding: 12px 16px; }
+      #hero { padding: 100px 16px 48px; }
+      .section-inner { padding: 0 16px; }
+      .hero-stats { flex-direction: column; gap: 14px; }
+      .stat-num { font-size: 24px; }
+      #features, #stats, #tech, #algerian,
+      #pricing, #roadmap, #testimonials, #faq { padding: 56px 0; }
+      .algerian-card { padding: 28px 20px; }
+      .tech-grid { grid-template-columns: repeat(2,1fr); }
+      .price-card { padding: 24px 20px; }
+      .phase-card { padding: 24px 20px; }
+      .testi-card { padding: 22px 18px; }
+      .footer-main { padding: 36px 16px; }
+      .footer-bottom { padding: 14px 16px; flex-direction: column; gap: 4px; text-align: center; }
+    }
+
+    /* ── Word-by-word title reveal ────────────────── */
+    .section-title .word,
+    .hero-title .word {
+      display: inline-block;
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.55s cubic-bezier(.22,1,.36,1),
+                  transform 0.55s cubic-bezier(.22,1,.36,1);
+    }
+    .section-title.words-visible .word,
+    .hero-title.words-visible .word {
+      opacity: 1;
+      transform: none;
+    }
+
+    /* ── Pinned How-it-works ──────────────────────── */
+    #howitworks {
+      padding: 0 !important;
+      position: relative;
+    }
+    .howitworks-sticky {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      padding-top: 90px;  /* clear the fixed navbar */
+      padding-bottom: 40px;
+    }
+    .howitworks-sticky .section-inner {
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+      width: 100%;
+      max-height: calc(100vh - 130px);
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+    .howitworks-sticky .section-inner::-webkit-scrollbar { display: none; }
+
+    /* Steps progress track */
+    .steps-list { position: relative; }
+    .steps-progress-track {
+      position: absolute;
+      left: -16px; top: 0; bottom: 0;
+      width: 2px;
+      background: rgba(255,255,255,.07);
+      border-radius: 2px;
+      z-index: 0;
+    }
+    .steps-progress-fill {
+      width: 100%; height: 0%;
+      background: linear-gradient(180deg, var(--coral), var(--purple), var(--emerald));
+      border-radius: 2px;
+      transition: height 0.08s linear;
+    }
+
+    /* Enhanced step states */
+    .step {
+      transition: background .3s, border-color .3s, transform .4s cubic-bezier(.34,1.56,.64,1), opacity .3s;
+    }
+    .step.active {
+      background: rgba(255,255,255,.07) !important;
+      border-color: rgba(255,255,255,.14) !important;
+      transform: translateX(10px) !important;
+    }
+    .step.active .step-title { color: #fff !important; }
+    .step.active .step-desc  { color: rgba(255,255,255,.65) !important; }
+    .step.active .step-num   { animation: step-num-pulse 2s ease-in-out infinite; }
+    @keyframes step-num-pulse {
+      0%,100% { transform: scale(1); }
+      50%     { transform: scale(1.1); filter: brightness(1.3); }
+    }
+    .step.done .step-title { color: rgba(255,255,255,.4); }
+    .step.done .step-desc  { color: rgba(255,255,255,.22); }
+
+    /* ── 3D Tilt ──────────────────────────────────── */
+    .feature-card, .price-card, .phase-card, .testi-card {
+      will-change: transform;
+    }
+    /* Disable conflicting CSS hover transforms — JS handles these */
+    .feature-card:hover { transform: none !important; }
+
+    /* ── Responsive overrides for pin ────────────── */
+    @media (max-width: 960px) {
+      #howitworks { height: auto !important; }
+      .howitworks-sticky {
+        position: relative;
+        height: auto;
+        min-height: unset;
+        padding: 80px 0 60px;
+      }
+      .howitworks-sticky .section-inner {
+        max-height: none;
+        overflow-y: visible;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Cursor glow -->
+<div id="cursor-glow"></div>
+
+<!-- ── Navbar ──────────────────────────────────── -->
+<nav id="navbar">
+  <a href="#" class="nav-logo">
+    <img src="../assets/images/logo1-removebg-preview.png" alt="SmartDzMeal"
+         onerror="this.style.display='none'"/>
+    <span class="nav-logo-text">SmartDzMeal</span>
+  </a>
+  <div class="nav-live"><div class="nav-live-dot"></div> On-Device AI</div>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#howitworks">How it works</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+  </ul>
+  <button class="nav-cta magnetic"
+    onclick="document.getElementById('download').scrollIntoView({behavior:'smooth'})">
+    Get Started →
+  </button>
+</nav>
+
+<!-- Hamburger (fixed, always above everything) -->
+<button class="nav-hamburger" id="nav-hamburger" aria-label="Open menu">
+  <span></span><span></span><span></span>
+</button>
+
+<!-- Mobile menu -->
+<div id="mobile-menu">
+  <ul class="mobile-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#howitworks">How it works</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="#faq">FAQ</a></li>
+  </ul>
+  <button class="mob-cta"
+    onclick="closeMobileMenu();document.getElementById('download').scrollIntoView({behavior:'smooth'})">
+    Get Started →
+  </button>
+</div>
+
+<!-- ── Hero ───────────────────────────────────── -->
+<section id="hero">
+  <div class="hero-left">
+    <div class="hero-badge reveal">AI-Powered Nutrition Tracker</div>
+    <h1 class="hero-title reveal d1">
+      Eat Smarter,<br/>
+      <span class="line2">Live <span id="typewriter">Healthier</span><span class="cursor-blink"></span></span>
+    </h1>
+    <p class="hero-sub reveal d2">
+      Point your camera at any meal and get <strong>instant nutritional info</strong>.
+      Built for <strong>Algerian cuisine</strong> and beyond — powered by on-device AI.
+    </p>
+    <div class="hero-buttons reveal d3">
+      <a href="#howitworks" class="btn-primary magnetic">See How It Works →</a>
+      <a href="#features" class="btn-ghost">✦ Explore Features</a>
+    </div>
+    <div class="hero-stats reveal d4">
+      <div><div class="stat-num counter" data-target="33">0</div><div class="stat-label">Recognized foods</div></div>
+      <div><div class="stat-num counter" data-target="55">0</div><div class="stat-label">Foods in database</div></div>
+      <div><div class="stat-num">100<span class="accent">%</span></div><div class="stat-label">On-device AI</div></div>
+    </div>
+  </div>
+
+  <div class="hero-right reveal-r d2">
+    <div class="phone-scene">
+      <div class="phone-glow"></div>
+
+      <div class="float-badge badge-1" id="b1">
+        <div class="badge-icon">🇩🇿</div>
+        <div><div class="badge-top">Recognized</div><div class="badge-bot">Couscous</div></div>
+        <div class="badge-dot" style="background:var(--emerald)"></div>
+      </div>
+      <div class="float-badge badge-2" id="b2">
+        <div class="badge-icon">🔥</div>
+        <div><div class="badge-top">Calories today</div><div class="badge-bot">1,847 kcal</div></div>
+      </div>
+      <div class="float-badge badge-3" id="b3">
+        <div class="badge-icon">⚡</div>
+        <div><div class="badge-top">Confidence</div><div class="badge-bot">94.2%</div></div>
+        <div class="badge-dot" style="background:var(--gold)"></div>
+      </div>
+
+      <div class="phone-wrap" id="phone-wrap">
+        <img src="../assets/images/hero_section_img.png" alt="mockup"
+         onerror="this.style.display='none'"/>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ── Features ────────────────────────────────── -->
+<section id="features" class="light-section">
+  <div class="section-inner">
+    <div class="features-header">
+      <div class="section-tag light reveal">Features</div>
+      <h2 class="section-title light reveal d1">Everything you need<br/>to track smarter</h2>
+      <p class="section-sub light reveal d2" style="margin:0 auto">From AI-powered recognition to personalized goals — one app covers your full nutrition journey.</p>
+    </div>
+    <div class="features-grid">
+
+      <!-- Knows Algerian Dishes -->
+      <div class="feature-card fc-coral reveal d1">
+        <div class="spotlight"></div>
+        <div class="feature-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 13h18"/><path d="M3 13a9 9 0 0 0 18 0"/><path d="M8 13V9a4 4 0 0 1 8 0v4"/>
+            <path d="M9 6c0-1 .5-2 .5-3M12 6c0-1 .5-2 .5-3M15 6c0-1 .5-2 .5-3"/>
+          </svg>
+        </div>
+        <div class="feature-title-row">
+          <div class="feature-title">Knows Algerian Dishes</div>
+          <span class="dz-badge">DZ</span>
+        </div>
+        <p class="feature-desc">SmartDzMeals is capable of recognising even Algerian traditional dishes like couscous, tajine-zitoune, chourba, and bourek. No other app does this.</p>
+        <div class="food-mini-chips">
+          <span class="food-mini-chip">🇩🇿 Couscous</span>
+          <span class="food-mini-chip">🇩🇿 Tajine Zitoune</span>
+          <span class="food-mini-chip">🇩🇿 Chourba</span>
+          <span class="food-mini-chip">🇩🇿 Berkoukes</span>
+        </div>
+      </div>
+
+      <!-- Works Offline -->
+      <div class="feature-card fc-blue reveal d2">
+        <div class="spotlight"></div>
+        <div class="feature-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="2" y1="2" x2="22" y2="22"/>
+            <path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M5 12.55a11 11 0 0 1 5.5-2.5M19 12.55a11 11 0 0 0-3-.86"/>
+            <path d="M2.42 9a16 16 0 0 1 5.13-3M21.58 9a16 16 0 0 0-7.13-3.5"/>
+            <circle cx="12" cy="20" r="1" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="feature-title">Works Offline</div>
+        <p class="feature-desc">No internet needed. Ever. Use it anywhere – kitchen, countryside, basement. Your data plan stays for what matters.</p>
+      </div>
+
+      <!-- 100% Private -->
+      <div class="feature-card fc-purple reveal d3">
+        <div class="spotlight"></div>
+        <div class="feature-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+        </div>
+        <div class="feature-title">100% Private</div>
+        <p class="feature-desc">Your photos never leave your phone. No uploads. No tracking. Your diet is your business, not ours.</p>
+      </div>
+
+      <!-- Reliable Nutrition Data -->
+      <div class="feature-card fc-gold reveal d1">
+        <div class="spotlight"></div>
+        <div class="feature-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <ellipse cx="12" cy="5" rx="9" ry="3"/>
+            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+          </svg>
+        </div>
+        <div class="feature-title">Reliable Nutrition Data</div>
+        <p class="feature-desc">Accurate tracking using trusted databases like USDA and CIQUAL. No guessing. No approximations.</p>
+      </div>
+
+      <!-- Smart Recognition -->
+      <div class="feature-card fc-emerald reveal d2">
+        <div class="spotlight"></div>
+        <div class="feature-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3Z"/>
+            <path d="M5 3v3M19 18v3M3 5h3M18 20h3"/>
+          </svg>
+        </div>
+        <div class="feature-title">Smart Recognition</div>
+        <p class="feature-desc">Powered by a unique dataset of Algerian foods. Just take a photo and get instant results.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── How it works (DARK) ────────────────────── -->
+<section id="howitworks" class="dark-section" style="height:300vh">
+  <div class="howitworks-sticky">
+  <div class="section-inner">
+    <div class="section-tag dark reveal">How it works</div>
+    <h2 class="section-title dark reveal d1">From photo to nutrition<br/>in 3 simple steps</h2>
+    <p class="section-sub dark reveal d2">No manual data entry needed. Just point, adjust, and save.</p>
+
+    <div class="steps-layout" style="margin-top:32px">
+      <div class="steps-list">
+        <div class="steps-progress-track"><div class="steps-progress-fill"></div></div>
+        <div class="step active reveal d1">
+          <div class="step-num">1</div>
+          <div>
+            <div class="step-title">Scan your meal</div>
+            <p class="step-desc">Take a photo or upload from your gallery. The AI model analyzes it on-device and returns the top food match with a confidence score.</p>
+          </div>
+        </div>
+        <div class="step reveal d2">
+          <div class="step-num">2</div>
+          <div>
+            <div class="step-title">Adjust the portions</div>
+            <p class="step-desc">Review ingredients and fine-tune gram amounts with the +/− stepper. Add extras or remove what isn't on your plate.</p>
+          </div>
+        </div>
+        <div class="step reveal d3">
+          <div class="step-num">3</div>
+          <div>
+            <div class="step-title">Save & track</div>
+            <p class="step-desc">Save the meal. Your home screen updates instantly — calorie ring, macro bars, and daily progress all reflect the new meal.</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="hw-phone-wrap" style="display:flex;justify-content:center">
+        <div class="hw-phone">
+          <div class="hw-screenshots">
+            <img class="hw-shot active" src="../assets/images/how_it_works1.png" alt="Scan your meal"/>
+            <img class="hw-shot"        src="../assets/images/how_it_works2.png" alt="Adjust portions"/>
+            <img class="hw-shot"        src="../assets/images/how_it_works3.png" alt="Save and track"/>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+</section>
+
+<!-- ── Stats (DARK) ───────────────────────────── -->
+<section id="stats" class="dark-section">
+  <div class="section-inner">
+    <div class="stats-grid">
+      <div class="stat-card reveal d1">
+        <div class="big-num" style="background:linear-gradient(135deg,var(--coral),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">
+          <span class="counter" data-target="33">0</span>+
+        </div>
+        <div class="stat-desc">AI-recognized food classes</div>
+      </div>
+      <div class="stat-card reveal d2">
+        <div class="big-num" style="background:linear-gradient(135deg,var(--purple),#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">
+          <span class="counter" data-target="55">0</span>+
+        </div>
+        <div class="stat-desc">Foods in the database</div>
+      </div>
+      <div class="stat-card reveal d3">
+        <div class="big-num" style="background:linear-gradient(135deg,var(--blue),#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">
+          <span class="counter" data-target="90">0</span>
+        </div>
+        <div class="stat-desc">Days of browsable history</div>
+      </div>
+      <div class="stat-card reveal d4">
+        <div class="big-num" style="background:linear-gradient(135deg,var(--emerald),#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">
+          100%
+        </div>
+        <div class="stat-desc">On-device AI — no server</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+/* ── Pricing ───────────────────────────────────── */
+#pricing { padding: 120px 0; background: var(--bg); }
+.pricing-header { text-align: center; margin-bottom: 56px; }
+.pricing-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; align-items: start; }
+
+.price-card {
+  background: var(--card); border-radius: 24px; padding: 32px 28px;
+  border: 1.5px solid var(--divider);
+  position: relative; overflow: hidden;
+  transition: transform .3s, box-shadow .3s;
+}
+.price-card:hover { transform: translateY(-6px); box-shadow: 0 20px 50px rgba(45,27,14,.1); }
+.price-card.featured {
+  border-color: var(--coral);
+  box-shadow: 0 8px 40px rgba(232,149,109,.18);
+}
+.price-card.featured::before {
+  content: '';
+  position: absolute; inset: 0; border-radius: 24px; padding: 1.5px;
+  background: linear-gradient(135deg, var(--coral), var(--gold));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+}
+.price-badge {
+  display: inline-block; font-size: 11px; font-weight: 700;
+  padding: 4px 12px; border-radius: 20px; margin-bottom: 16px;
+}
+.badge-flex  { background: rgba(14,165,233,.12); color: var(--blue); }
+.badge-value { background: linear-gradient(135deg, var(--coral), var(--gold)); color: #fff; }
+
+.price-name  { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 10px; }
+.price-amount {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 44px; font-weight: 800; color: var(--text); line-height: 1;
+}
+.price-amount span { font-size: 16px; font-weight: 500; color: var(--muted); }
+.price-period { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+
+.price-divider { height: 1px; background: var(--divider); margin: 20px 0; }
+
+.price-feature {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 14px; color: var(--text); margin-bottom: 12px;
+}
+.check-icon {
+  width: 18px; height: 18px; min-width: 18px; border-radius: 50%;
+  background: rgba(5,150,105,.12); display: flex; align-items: center; justify-content: center;
+}
+.check-icon svg { width: 10px; height: 10px; }
+.price-cta {
+  width: 100%; padding: 14px; border-radius: 50px;
+  font-size: 15px; font-weight: 700; font-family: 'DM Sans', sans-serif;
+  cursor: pointer; margin-top: 24px; transition: all .2s;
+}
+.cta-outline {
+  background: transparent; border: 2px solid var(--divider); color: var(--text);
+}
+.cta-outline:hover { border-color: var(--coral); color: var(--coral); }
+.cta-filled {
+  background: linear-gradient(135deg, var(--coral), var(--warm));
+  border: none; color: #fff;
+  box-shadow: 0 4px 18px rgba(232,149,109,.35);
+}
+.cta-filled:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(232,149,109,.5); }
+.price-note { font-size: 12px; color: var(--muted); text-align: center; margin-top: 8px; }
+
+.pro-banner {
+  display: flex; align-items: center; gap: 16px;
+  background: var(--card); border: 1.5px solid var(--divider);
+  border-radius: 20px; padding: 20px 28px; margin-top: 20px;
+}
+.pro-icon {
+  width: 44px; height: 44px; border-radius: 13px;
+  background: linear-gradient(135deg, var(--coral), var(--warm));
+  display: flex; align-items: center; justify-content: center; min-width: 44px;
+}
+.pro-icon svg { width: 22px; height: 22px; }
+.pro-title { font-size: 15px; font-weight: 700; color: var(--text); }
+.pro-sub { font-size: 13px; color: var(--muted); }
+.pro-price-chip {
+  background: rgba(232,149,109,.1); color: var(--coral);
+  font-size: 12px; font-weight: 700; padding: 4px 12px;
+  border-radius: 20px; white-space: nowrap; margin-left: 8px;
+}
+.pro-cta-btn {
+  margin-left: auto; background: transparent;
+  border: 1.5px solid var(--divider); border-radius: 50px;
+  padding: 9px 22px; font-size: 13px; font-weight: 600;
+  color: var(--text); cursor: pointer; white-space: nowrap;
+  font-family: 'DM Sans', sans-serif; transition: all .2s;
+}
+.pro-cta-btn:hover { border-color: var(--coral); color: var(--coral); }
+
+.student-note {
+  text-align: center; margin-top: 18px;
+  font-size: 13px; color: var(--muted); font-style: italic;
+}
+.student-note strong { color: var(--coral); font-style: normal; }
+.student-note a { color: var(--coral); }
+
+/* ── Roadmap ────────────────────────────────────── */
+#roadmap { padding: 120px 0; background: var(--dark); }
+.roadmap-header { text-align: center; margin-bottom: 56px; }
+.roadmap-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
+
+.phase-card {
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07);
+  border-radius: 24px; padding: 32px 28px;
+  transition: background .3s, transform .3s;
+}
+.phase-card:hover { background: rgba(255,255,255,.07); transform: translateY(-4px); }
+
+.phase-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; color: rgba(255,255,255,.35); margin-bottom: 10px;
+}
+.phase-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+.phase-icon-wrap {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; min-width: 36px;
+}
+.phase-icon-wrap.green   { background: var(--emerald); }
+.phase-icon-wrap.coral   { background: var(--coral); }
+.phase-icon-wrap.dark-ph { background: rgba(255,255,255,.12); }
+.phase-icon-wrap svg { width: 18px; height: 18px; }
+.phase-name { font-size: 18px; font-weight: 700; color: #fff; }
+
+.phase-feature {
+  display: flex; align-items: flex-start; gap: 10px;
+  font-size: 14px; color: rgba(255,255,255,.6); margin-bottom: 12px; line-height: 1.5;
+}
+.phase-check {
+  width: 16px; height: 16px; min-width: 16px; border-radius: 50%;
+  background: rgba(255,255,255,.08);
+  display: flex; align-items: center; justify-content: center; margin-top: 1px;
+}
+.phase-check svg { width: 8px; height: 8px; }
+.phase-check.green-c   { background: rgba(5,150,105,.25); }
+.phase-check.coral-c   { background: rgba(232,149,109,.2); }
+.phase-check.neutral-c { background: rgba(255,255,255,.08); }
+
+/* ── Testimonials ───────────────────────────────── */
+#testimonials { padding: 120px 0; background: var(--bg); }
+.testimonials-header { text-align: center; margin-bottom: 56px; }
+.testimonials-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
+
+.testi-card {
+  background: var(--card); border-radius: 22px; padding: 28px 24px;
+  border: 1.5px solid var(--divider);
+  transition: transform .3s, box-shadow .3s;
+}
+.testi-card:hover { transform: translateY(-6px); box-shadow: 0 16px 40px rgba(45,27,14,.1); }
+
+.testi-stars { display: flex; gap: 3px; margin-bottom: 14px; }
+.testi-stars svg { width: 16px; height: 16px; }
+
+.testi-quote {
+  font-size: 15px; line-height: 1.7; color: var(--text);
+  margin-bottom: 20px; font-style: italic;
+}
+.testi-author { display: flex; align-items: center; gap: 12px; }
+.testi-avatar {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; color: #fff;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.testi-name  { font-size: 14px; font-weight: 700; color: var(--text); }
+.testi-city  { font-size: 12px; color: var(--muted); }
+
+/* ── FAQ ────────────────────────────────────────── */
+#faq { padding: 100px 0; background: var(--bg); border-top: 1px solid var(--divider); }
+.faq-header { text-align: center; margin-bottom: 52px; }
+.faq-list { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+
+.faq-item {
+  background: var(--card); border-radius: 16px;
+  border: 1.5px solid var(--divider);
+  overflow: hidden; transition: border-color .2s;
+}
+.faq-item[open] { border-color: var(--coral); }
+.faq-item summary {
+  padding: 20px 24px; cursor: pointer; list-style: none;
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 15px; font-weight: 600; color: var(--text);
+  user-select: none;
+}
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-arrow {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--divider); display: flex;
+  align-items: center; justify-content: center; min-width: 24px;
+  transition: background .2s, transform .3s;
+}
+.faq-arrow svg { width: 12px; height: 12px; }
+.faq-item[open] .faq-arrow { background: var(--coral); transform: rotate(45deg); }
+.faq-item[open] .faq-arrow svg path { stroke: #fff; }
+.faq-body {
+  padding: 0 24px 20px;
+  font-size: 14px; color: var(--muted); line-height: 1.75;
+}
+
+/* ── New Footer ─────────────────────────────────── */
+.new-footer {
+  background: var(--dark);
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+.footer-main {
+  display: grid; grid-template-columns: 1.8fr 1fr 1fr;
+  gap: 60px; padding: 64px;
+  max-width: 1100px; margin: 0 auto;
+}
+.footer-col-logo img { height: 36px; filter: brightness(0) invert(1); opacity: .75; margin-bottom: 12px; }
+.footer-col-logo .brand {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 17px; font-weight: 800; color: rgba(255,255,255,.85);
+  margin-bottom: 10px;
+}
+.footer-tagline { font-size: 13px; color: rgba(255,255,255,.35); line-height: 1.7; max-width: 260px; }
+.footer-tagline a { color: var(--coral); text-decoration: none; }
+.footer-col-title { font-size: 13px; font-weight: 700; color: rgba(255,255,255,.7); margin-bottom: 16px; letter-spacing: .3px; }
+.footer-links { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.footer-links a { font-size: 14px; color: rgba(255,255,255,.4); text-decoration: none; transition: color .2s; }
+.footer-links a:hover { color: rgba(255,255,255,.8); }
+.footer-contact-item { display: flex; align-items: center; gap: 10px; font-size: 14px; color: rgba(255,255,255,.4); margin-bottom: 10px; }
+.footer-contact-item svg { width: 16px; height: 16px; min-width: 16px; opacity: .5; }
+
+.footer-bottom {
+  border-top: 1px solid rgba(255,255,255,.06);
+  padding: 18px 64px;
+  display: flex; align-items: center; justify-content: space-between;
+  max-width: 1100px; margin: 0 auto;
+}
+.footer-bottom-text { font-size: 12px; color: rgba(255,255,255,.25); }
+
+/* responsive additions */
+@media (max-width: 960px) {
+  .pricing-grid, .roadmap-grid, .testimonials-grid { grid-template-columns: 1fr; }
+  .footer-main { grid-template-columns: 1fr; gap: 32px; padding: 40px 24px; }
+  .footer-bottom { flex-direction: column; gap: 6px; padding: 16px 24px; text-align: center; }
+}
+@media (max-width: 600px) {
+  .pricing-grid, .roadmap-grid, .testimonials-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Download section ───────────────────────────── */
+#download {
+  padding: 0;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+/* Dark brand header at top */
+.download-dark-top {
+  background: var(--dark);
+  padding: 36px 24px;
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.download-dark-top img {
+  height: 38px;
+  filter: brightness(0) invert(1); opacity: .9;
+}
+.download-brand-name {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 22px; font-weight: 800; color: #fff;
+}
+
+/* Light content below */
+.download-inner {
+  max-width: 640px; margin: 0 auto;
+  padding: 72px 24px 88px;
+  text-align: center;
+}
+.download-sub {
+  font-size: 17px; color: var(--muted);
+  line-height: 1.7; margin-bottom: 44px;
+}
+.download-buttons {
+  display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+.dl-btn-android {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: linear-gradient(135deg, var(--coral), var(--warm));
+  color: #fff; text-decoration: none; border-radius: 50px;
+  padding: 16px 36px; font-size: 16px; font-weight: 700;
+  font-family: 'DM Sans', sans-serif;
+  box-shadow: 0 8px 32px rgba(232,149,109,.45);
+  transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s;
+}
+.dl-btn-android:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 14px 40px rgba(232,149,109,.6); }
+.dl-btn-ios {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: rgba(45,27,14,.05); color: rgba(45,27,14,.3);
+  border: 1px solid var(--divider); border-radius: 50px;
+  padding: 16px 32px; font-size: 16px; font-weight: 600;
+  font-family: 'DM Sans', sans-serif; cursor: not-allowed;
+}
+.dl-meta {
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px; flex-wrap: wrap;
+}
+.dl-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(45,27,14,.05); border: 1px solid var(--divider);
+  border-radius: 50px; padding: 5px 14px;
+  font-size: 12px; font-weight: 600; color: var(--muted);
+}
+.dl-chip svg { width: 12px; height: 12px; opacity: .6; }
+.dl-apk-note {
+  margin-top: 18px; font-size: 12px;
+  color: var(--muted); line-height: 1.6;
+}
+.dl-apk-note a { color: var(--coral); text-decoration: none; }
+
+/* ── Sticky download bar (mobile only) ─────────── */
+#sticky-dl {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+  background: rgba(13,10,24,.96); backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255,255,255,.08);
+  padding: 12px 20px;
+  align-items: center; gap: 12px;
+  transform: translateY(100%);
+  transition: transform .45s cubic-bezier(.22,1,.36,1);
+}
+#sticky-dl.visible { transform: translateY(0); }
+.sticky-dl-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  overflow: hidden; flex-shrink: 0;
+}
+.sticky-dl-icon img { width: 100%; height: 100%; object-fit: cover; }
+.sticky-dl-text { flex: 1; }
+.sticky-dl-name { font-size: 13px; font-weight: 700; color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; }
+.sticky-dl-ver  { font-size: 11px; color: rgba(255,255,255,.4); }
+.sticky-dl-btn {
+  background: linear-gradient(135deg, var(--coral), var(--warm));
+  color: #fff; text-decoration: none; border-radius: 50px;
+  padding: 9px 20px; font-size: 13px; font-weight: 700;
+  font-family: 'DM Sans', sans-serif; white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(232,149,109,.4);
+  flex-shrink: 0;
+}
+.sticky-dl-close {
+  background: none; border: none; cursor: pointer;
+  color: rgba(255,255,255,.35); font-size: 18px; padding: 4px;
+  flex-shrink: 0; line-height: 1;
+}
+@media (max-width: 960px) {
+  #sticky-dl { display: flex; }
+  #download .download-inner { padding: 52px 24px 64px; }
+}
+@media (max-width: 480px) {
+  .download-buttons { flex-direction: column; align-items: center; }
+  .dl-btn-android, .dl-btn-ios { width: 100%; justify-content: center; }
+}
+</style>
+
+<!-- ── Pricing ─────────────────────────────────── -->
+<section id="pricing">
+  <div class="section-inner">
+    <div class="pricing-header">
+      <div class="section-tag light reveal">Pricing</div>
+      <h2 class="section-title light reveal d1">Honest pricing. Generous free tier.</h2>
+      <p class="section-sub light reveal d2" style="margin:0 auto">Pay only if you want more. No tricks, no dark patterns.</p>
+    </div>
+
+    <div class="pricing-grid">
+
+      <!-- Free -->
+      <div class="price-card reveal d1">
+        <div class="price-name">Free Forever</div>
+        <div class="price-amount">0 <span>DZD</span></div>
+        <div class="price-period">Forever</div>
+        <div class="price-divider"></div>
+        <div class="price-feature"><div class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#059669" stroke-width="1.5" stroke-linecap="round"/></svg></div>3 scans per day</div>
+        <div class="price-feature"><div class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#059669" stroke-width="1.5" stroke-linecap="round"/></svg></div>7-day meal history</div>
+        <div class="price-feature"><div class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#059669" stroke-width="1.5" stroke-linecap="round"/></svg></div>Ingredient adjustment</div>
+        <div class="price-feature"><div class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#059669" stroke-width="1.5" stroke-linecap="round"/></svg></div>Manual entry</div>
+        <button class="price-cta cta-outline" onclick="document.getElementById('download').scrollIntoView({behavior:'smooth'})">Get Started</button>
+      </div>
+
+      <!-- Monthly -->
+      <div class="price-card reveal d2">
+        <div class="price-badge badge-flex">Most flexible</div>
+        <div class="price-name">Premium Monthly</div>
+        <div class="price-amount">500 <span>DZD</span></div>
+        <div class="price-period">per month</div>
+        <div class="price-divider"></div>
+        <div class="price-feature"><div class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#059669" stroke-width="1.5" stroke-linecap="round"/></svg></div>Unlimited scans</div>
+        <div class="price-feature"><div class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#059669" stroke-width="1.5" stroke-linecap="round"/></svg></div>Unlimited history</div>
+        <div class="price-feature"><div class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#059669" stroke-width="1.5" stroke-linecap="round"/></svg></div>Export to PDF/CSV</div>
+        <div class="price-feature"><div class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#059669" stroke-width="1.5" stroke-linecap="round"/></svg></div>Priority support</div>
+        <div class="price-feature"><div class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#059669" stroke-width="1.5" stroke-linecap="round"/></svg></div>Early access to new features</div>
+        <button class="price-cta cta-filled">Subscribe Monthly</button>
+      </div>
+
+      <!-- Yearly (featured) -->
+      <div class="price-card featured reveal d3">
+        <div class="price-badge badge-value">⚡ Best value</div>
+        <div class="price-name">Premium Yearly</div>
+        <div class="price-amount">3000 <span>DZD</span></div>
+        <div class="price-period">per year</div>
+        <div class="price-divider"></div>
+        <div class="price-feature"><div class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#059669" stroke-width="1.5" stroke-linecap="round"/></svg></div>Unlimited scans</div>
+        <div class="price-feature"><div class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#059669" stroke-width="1.5" stroke-linecap="round"/></svg></div>Unlimited history</div>
+        <div class="price-feature"><div class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#059669" stroke-width="1.5" stroke-linecap="round"/></svg></div>Export to PDF/CSV</div>
+        <div class="price-feature"><div class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#059669" stroke-width="1.5" stroke-linecap="round"/></svg></div>Priority support</div>
+        <div class="price-feature"><div class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#059669" stroke-width="1.5" stroke-linecap="round"/></svg></div>Early access to new features</div>
+        <div class="price-feature"><div class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#059669" stroke-width="1.5" stroke-linecap="round"/></svg></div>Save 50% vs monthly</div>
+        <button class="price-cta cta-filled">Subscribe Yearly</button>
+        <div class="price-note">≈ 8 DZD per day</div>
+      </div>
+    </div>
+
+    <!-- Pro banner -->
+    <div class="pro-banner reveal d2">
+      <div class="pro-icon">
+        <svg viewBox="0 0 22 22" fill="none"><rect x="3" y="3" width="16" height="16" rx="3" stroke="white" stroke-width="1.8"/><path d="M7 11h8M11 7v8" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </div>
+      <div>
+        <div class="pro-title">For Professionals <span class="pro-price-chip">5,000 DZD / year</span></div>
+        <div class="pro-sub">Dashboard with all your clients, exportable reports, multi-client management.</div>
+      </div>
+      <button class="pro-cta-btn">Contact Us</button>
+    </div>
+
+    <div class="student-note reveal d3">
+      <svg style="display:inline;vertical-align:middle;margin-right:4px" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1l1.8 3.6L13 5.6l-3 2.9.7 4.1L7 10.5 3.3 12.6l.7-4.1-3-2.9 4.2-.9z" fill="#E8956D"/></svg>
+      Students with <strong>.dz email: 2000 DZD/year</strong> for Premium. <a href="#">Contact us.</a><br/>
+      <span style="font-size:12px;color:var(--muted)">Less than one pizza per year. Or keep using Free — it's generous enough for most users.</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── Roadmap (DARK) ──────────────────────────── -->
+<section id="roadmap">
+  <div class="section-inner">
+    <div class="roadmap-header">
+      <div class="section-tag dark reveal">Roadmap</div>
+      <h2 class="section-title dark reveal d1">Where we are. Where we're going.</h2>
+    </div>
+    <div class="roadmap-grid">
+
+      <!-- Phase 1 -->
+      <div class="phase-card reveal d1">
+        <div class="phase-label">PHASE 1</div>
+        <div class="phase-header">
+          <div class="phase-icon-wrap green">
+            <svg viewBox="0 0 18 18" fill="none"><path d="M4 9l3.5 3.5 6.5-7" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="phase-name">Now (Current)</div>
+        </div>
+        <div class="phase-feature"><div class="phase-check green-c"><svg viewBox="0 0 8 8" fill="none"><path d="M1.5 4l2 2 3-3.5" stroke="#059669" stroke-width="1.3" stroke-linecap="round"/></svg></div>Recognises Algerian dishes (couscous, tajine-zitoune, chourba, bourek)</div>
+        <div class="phase-feature"><div class="phase-check green-c"><svg viewBox="0 0 8 8" fill="none"><path d="M1.5 4l2 2 3-3.5" stroke="#059669" stroke-width="1.3" stroke-linecap="round"/></svg></div>Works offline. Private. Free.</div>
+        <div class="phase-feature"><div class="phase-check green-c"><svg viewBox="0 0 8 8" fill="none"><path d="M1.5 4l2 2 3-3.5" stroke="#059669" stroke-width="1.3" stroke-linecap="round"/></svg></div>Ingredient adjustment &amp; meal history</div>
+        <div class="phase-feature"><div class="phase-check green-c"><svg viewBox="0 0 8 8" fill="none"><path d="M1.5 4l2 2 3-3.5" stroke="#059669" stroke-width="1.3" stroke-linecap="round"/></svg></div>90% accuracy on 33 food classes</div>
+      </div>
+
+      <!-- Phase 2 -->
+      <div class="phase-card reveal d2">
+        <div class="phase-label">PHASE 2</div>
+        <div class="phase-header">
+          <div class="phase-icon-wrap coral">
+            <svg viewBox="0 0 18 18" fill="none"><path d="M10 3l-4 6h3.5l-1.5 6 4-6H8.5L10 3z" fill="white"/></svg>
+          </div>
+          <div class="phase-name">Coming Soon</div>
+        </div>
+        <div class="phase-feature"><div class="phase-check coral-c"><svg viewBox="0 0 8 8" fill="none"><path d="M1.5 4l2 2 3-3.5" stroke="#E8956D" stroke-width="1.3" stroke-linecap="round"/></svg></div>20+ more Algerian dishes</div>
+        <div class="phase-feature"><div class="phase-check coral-c"><svg viewBox="0 0 8 8" fill="none"><path d="M1.5 4l2 2 3-3.5" stroke="#E8956D" stroke-width="1.3" stroke-linecap="round"/></svg></div>Barcode scanning for packaged foods</div>
+        <div class="phase-feature"><div class="phase-check coral-c"><svg viewBox="0 0 8 8" fill="none"><path d="M1.5 4l2 2 3-3.5" stroke="#E8956D" stroke-width="1.3" stroke-linecap="round"/></svg></div>Export meal logs to PDF</div>
+        <div class="phase-feature"><div class="phase-check coral-c"><svg viewBox="0 0 8 8" fill="none"><path d="M1.5 4l2 2 3-3.5" stroke="#E8956D" stroke-width="1.3" stroke-linecap="round"/></svg></div>Share meals to WhatsApp</div>
+        <div class="phase-feature"><div class="phase-check coral-c"><svg viewBox="0 0 8 8" fill="none"><path d="M1.5 4l2 2 3-3.5" stroke="#E8956D" stroke-width="1.3" stroke-linecap="round"/></svg></div>Family plan (5 accounts for 1,500 DZD/year)</div>
+      </div>
+
+      <!-- Phase 3 -->
+      <div class="phase-card reveal d3">
+        <div class="phase-label">PHASE 3</div>
+        <div class="phase-header">
+          <div class="phase-icon-wrap dark-ph">
+            <svg viewBox="0 0 18 18" fill="none"><path d="M9 2l1.5 4.5H15l-3.7 2.7 1.4 4.3L9 11.2l-3.7 2.3 1.4-4.3L3 6.5h4.5z" fill="rgba(255,255,255,0.7)"/></svg>
+          </div>
+          <div class="phase-name">Future</div>
+        </div>
+        <div class="phase-feature"><div class="phase-check neutral-c"><svg viewBox="0 0 8 8" fill="none"><path d="M1.5 4l2 2 3-3.5" stroke="rgba(255,255,255,0.4)" stroke-width="1.3" stroke-linecap="round"/></svg></div>Nutritionist dashboard (B2B platform)</div>
+        <div class="phase-feature"><div class="phase-check neutral-c"><svg viewBox="0 0 8 8" fill="none"><path d="M1.5 4l2 2 3-3.5" stroke="rgba(255,255,255,0.4)" stroke-width="1.3" stroke-linecap="round"/></svg></div>Smarter portion estimation from photo</div>
+        <div class="phase-feature"><div class="phase-check neutral-c"><svg viewBox="0 0 8 8" fill="none"><path d="M1.5 4l2 2 3-3.5" stroke="rgba(255,255,255,0.4)" stroke-width="1.3" stroke-linecap="round"/></svg></div>Ramadan mode – tracking for fasting</div>
+        <div class="phase-feature"><div class="phase-check neutral-c"><svg viewBox="0 0 8 8" fill="none"><path d="M1.5 4l2 2 3-3.5" stroke="rgba(255,255,255,0.4)" stroke-width="1.3" stroke-linecap="round"/></svg></div>Available on iOS</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── Testimonials ────────────────────────────── -->
+<section id="testimonials">
+  <div class="section-inner">
+    <div class="testimonials-header">
+      <div class="section-tag light reveal">Testimonials</div>
+      <h2 class="section-title light reveal d1">Loved by people who love their food.</h2>
+    </div>
+    <div class="testimonials-grid">
+
+      <div class="testi-card reveal d1">
+        <div class="testi-stars">
+          <svg viewBox="0 0 16 16" fill="#F59E0B"><path d="M8 1l1.5 4.5H14l-3.7 2.7 1.4 4.3L8 10.2l-3.7 2.3 1.4-4.3L2 5.5h4.5z"/></svg>
+          <svg viewBox="0 0 16 16" fill="#F59E0B"><path d="M8 1l1.5 4.5H14l-3.7 2.7 1.4 4.3L8 10.2l-3.7 2.3 1.4-4.3L2 5.5h4.5z"/></svg>
+          <svg viewBox="0 0 16 16" fill="#F59E0B"><path d="M8 1l1.5 4.5H14l-3.7 2.7 1.4 4.3L8 10.2l-3.7 2.3 1.4-4.3L2 5.5h4.5z"/></svg>
+          <svg viewBox="0 0 16 16" fill="#F59E0B"><path d="M8 1l1.5 4.5H14l-3.7 2.7 1.4 4.3L8 10.2l-3.7 2.3 1.4-4.3L2 5.5h4.5z"/></svg>
+          <svg viewBox="0 0 16 16" fill="#F59E0B"><path d="M8 1l1.5 4.5H14l-3.7 2.7 1.4 4.3L8 10.2l-3.7 2.3 1.4-4.3L2 5.5h4.5z"/></svg>
+        </div>
+        <p class="testi-quote">"Finally an app that knows couscous! I used to log 'pasta' on other apps."</p>
+        <div class="testi-author">
+          <div class="testi-avatar" style="background:var(--coral)">S</div>
+          <div><div class="testi-name">Samia</div><div class="testi-city">Algiers</div></div>
+        </div>
+      </div>
+
+      <div class="testi-card reveal d2">
+        <div class="testi-stars">
+          <svg viewBox="0 0 16 16" fill="#F59E0B"><path d="M8 1l1.5 4.5H14l-3.7 2.7 1.4 4.3L8 10.2l-3.7 2.3 1.4-4.3L2 5.5h4.5z"/></svg>
+          <svg viewBox="0 0 16 16" fill="#F59E0B"><path d="M8 1l1.5 4.5H14l-3.7 2.7 1.4 4.3L8 10.2l-3.7 2.3 1.4-4.3L2 5.5h4.5z"/></svg>
+          <svg viewBox="0 0 16 16" fill="#F59E0B"><path d="M8 1l1.5 4.5H14l-3.7 2.7 1.4 4.3L8 10.2l-3.7 2.3 1.4-4.3L2 5.5h4.5z"/></svg>
+          <svg viewBox="0 0 16 16" fill="#F59E0B"><path d="M8 1l1.5 4.5H14l-3.7 2.7 1.4 4.3L8 10.2l-3.7 2.3 1.4-4.3L2 5.5h4.5z"/></svg>
+          <svg viewBox="0 0 16 16" fill="#F59E0B"><path d="M8 1l1.5 4.5H14l-3.7 2.7 1.4 4.3L8 10.2l-3.7 2.3 1.4-4.3L2 5.5h4.5z"/></svg>
+        </div>
+        <p class="testi-quote">"Works offline. That's huge in my region where internet is expensive."</p>
+        <div class="testi-author">
+          <div class="testi-avatar" style="background:var(--emerald)">A</div>
+          <div><div class="testi-name">Ahmed</div><div class="testi-city">Oran</div></div>
+        </div>
+      </div>
+
+      <div class="testi-card reveal d3">
+        <div class="testi-stars">
+          <svg viewBox="0 0 16 16" fill="#F59E0B"><path d="M8 1l1.5 4.5H14l-3.7 2.7 1.4 4.3L8 10.2l-3.7 2.3 1.4-4.3L2 5.5h4.5z"/></svg>
+          <svg viewBox="0 0 16 16" fill="#F59E0B"><path d="M8 1l1.5 4.5H14l-3.7 2.7 1.4 4.3L8 10.2l-3.7 2.3 1.4-4.3L2 5.5h4.5z"/></svg>
+          <svg viewBox="0 0 16 16" fill="#F59E0B"><path d="M8 1l1.5 4.5H14l-3.7 2.7 1.4 4.3L8 10.2l-3.7 2.3 1.4-4.3L2 5.5h4.5z"/></svg>
+          <svg viewBox="0 0 16 16" fill="#F59E0B"><path d="M8 1l1.5 4.5H14l-3.7 2.7 1.4 4.3L8 10.2l-3.7 2.3 1.4-4.3L2 5.5h4.5z"/></svg>
+          <svg viewBox="0 0 16 16" fill="#F59E0B"><path d="M8 1l1.5 4.5H14l-3.7 2.7 1.4 4.3L8 10.2l-3.7 2.3 1.4-4.3L2 5.5h4.5z"/></svg>
+        </div>
+        <p class="testi-quote">"I'm managing my weight and this app helps me track couscous without guilt."</p>
+        <div class="testi-author">
+          <div class="testi-avatar" style="background:#374151">F</div>
+          <div><div class="testi-name">Fatima</div><div class="testi-city">Constantine</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── FAQ ────────────────────────────────────── -->
+<section id="faq">
+  <div class="section-inner">
+    <div class="faq-header">
+      <div class="section-tag light reveal">FAQ</div>
+      <h2 class="section-title light reveal d1">Questions, answered honestly.</h2>
+    </div>
+    <div class="faq-list">
+
+      <details class="faq-item reveal d1">
+        <summary>Is there really a free version?
+          <div class="faq-arrow"><svg viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="#2D1B0E" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+        </summary>
+        <div class="faq-body">Yes, completely free with no time limit. You get 3 scans per day, 7-day meal history, manual entry, and full ingredient adjustment. No credit card, no trial. Just download and use.</div>
+      </details>
+
+      <details class="faq-item reveal d2">
+        <summary>Why should I pay? The free version seems generous.
+          <div class="faq-arrow"><svg viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="#2D1B0E" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+        </summary>
+        <div class="faq-body">You probably don't need to. The free tier handles most daily use cases. Premium is for people who want unlimited scans, full history beyond 7 days, and PDF export for dietitians or serious tracking.</div>
+      </details>
+
+      <details class="faq-item reveal d3">
+        <summary>Can I try Premium before paying?
+          <div class="faq-arrow"><svg viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="#2D1B0E" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+        </summary>
+        <div class="faq-body">We're planning a 14-day free trial for Premium. For now, the free tier gives you a solid feel for the app before committing.</div>
+      </details>
+
+      <details class="faq-item reveal d4">
+        <summary>Do you have a family plan?
+          <div class="faq-arrow"><svg viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="#2D1B0E" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+        </summary>
+        <div class="faq-body">Coming in Phase 2 — 5 accounts for 1,500 DZD/year. That's 300 DZD per person per year. If you're interested, contact us and we'll notify you when it launches.</div>
+      </details>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── Download ───────────────────────────────── -->
+<section id="download">
+
+  <!-- Dark brand header -->
+  <div class="download-dark-top">
+    <img src="../assets/images/logo1-removebg-preview.png" alt="SmartDzMeal"
+         onerror="this.style.display='none'"/>
+    <span class="download-brand-name">SmartDzMeal</span>
+  </div>
+
+  <!-- Light content -->
+  <div class="download-inner">
+
+    <h2 class="section-title light reveal d1">
+      Ready to eat<br/><span style="background:linear-gradient(135deg,var(--coral),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">smarter?</span>
+    </h2>
+    <p class="download-sub reveal d2">
+      Free to download. Works 100% offline. No Play Store needed.
+    </p>
+
+    <div class="download-buttons reveal d3">
+      <a class="dl-btn-android"
+         href="https://www.mediafire.com/file/zsmqr7wbnevwmn3/SmartDzMeal_Android.apk/file"
+         target="_blank" rel="noopener">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M17.523 15.341a.857.857 0 0 1-.857.857H7.334a.857.857 0 0 1-.857-.857V8.66a.857.857 0 0 1 .857-.857h9.332a.857.857 0 0 1 .857.857v6.681zM4.63 7.018l1.497 2.595A4.574 4.574 0 0 0 4.57 12a4.574 4.574 0 0 0 1.561 2.389L4.63 16.982A7.982 7.982 0 0 1 2 12a7.982 7.982 0 0 1 2.63-4.982zM19.37 7.018A7.982 7.982 0 0 1 22 12a7.982 7.982 0 0 1-2.63 4.982l-1.498-2.595A4.574 4.574 0 0 0 19.43 12a4.574 4.574 0 0 0-1.56-2.387l1.5-2.595zM14.341 2.13l-1.5 2.598a4.6 4.6 0 0 0-1.68 0L9.659 2.13a7.98 7.98 0 0 1 4.682 0z"/>
+        </svg>
+        Download for Android
+      </a>
+      <div class="dl-btn-ios">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="opacity:.4"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+        iOS — Coming Soon
+      </div>
+    </div>
+
+    <div class="dl-meta reveal d4">
+      <div class="dl-chip">
+        <svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.2"/><path d="M6 4v3l2 1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        v1.0.0
+      </div>
+      <div class="dl-chip">
+        <svg viewBox="0 0 12 12" fill="none"><rect x="1" y="2" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M4 2V1M8 2V1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        Android 6.0+
+      </div>
+      <div class="dl-chip">
+        <svg viewBox="0 0 12 12" fill="none"><path d="M6 1l1.5 3h3l-2.5 2 1 3L6 7.5 3 9l1-3L1.5 4h3z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+        Free
+      </div>
+    </div>
+
+    <p class="dl-apk-note reveal d5">
+      This is an APK file — not on the Play Store yet.<br/>
+      On your phone: <strong style="color:var(--text)">Settings → Security → Install unknown apps</strong> → enable for your browser.
+    </p>
+
+  </div>
+</section>
+
+<!-- ── Sticky download bar (mobile) ───────────── -->
+<div id="sticky-dl">
+  <div class="sticky-dl-icon">
+    <img src="../assets/images/app_logo.png" alt="" onerror="this.style.display='none'"/>
+  </div>
+  <div class="sticky-dl-text">
+    <div class="sticky-dl-name">SmartDzMeal</div>
+    <div class="sticky-dl-ver">v1.0.0 · Android</div>
+  </div>
+  <a class="sticky-dl-btn"
+     href="https://www.mediafire.com/file/zsmqr7wbnevwmn3/SmartDzMeal_Android.apk/file"
+     target="_blank" rel="noopener">
+    Download APK
+  </a>
+  <button class="sticky-dl-close" id="sticky-dl-close" aria-label="Dismiss">✕</button>
+</div>
+
+<!-- ── New Footer ─────────────────────────────── -->
+<div class="new-footer">
+  <div class="footer-main">
+    <div class="footer-col-logo">
+      <img src="../assets/images/logo1-removebg-preview.png" alt="" onerror="this.style.display='none'"/>
+      <div class="brand">SmartDzMeal</div>
+      <div class="footer-tagline">Finally, an app that knows <a href="#">couscous is not pasta</a>. Algerian food nutrition tracking, done right.</div>
+    </div>
+    <div>
+      <div class="footer-col-title">Quick links</div>
+      <ul class="footer-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="#howitworks">How it works</a></li>
+        <li><a href="#roadmap">Roadmap</a></li>
+        <li><a href="#faq">Contact</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="footer-col-title">Contact</div>
+      <div class="footer-contact-item">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M1 5l7 5 7-5" stroke="currentColor" stroke-width="1.3"/></svg>
+        support@smartdzmeal.com
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom" style="border-top:1px solid rgba(255,255,255,.06);max-width:100%">
+    <div class="footer-bottom-text">Version 1.0.0 — Final Year Project. University of Constantine 2.</div>
+    <div class="footer-bottom-text">Free tier includes 3 scans/day. Premium unlocks unlimited.</div>
+  </div>
+</div>
+
+<script>
+// ── Cursor glow ────────────────────────────────
+const glow = document.getElementById('cursor-glow');
+document.addEventListener('mousemove', e => {
+  glow.style.left = e.clientX + 'px';
+  glow.style.top  = e.clientY + 'px';
+});
+
+// ── Typewriter ─────────────────────────────────
+const WORDS = ['Healthier', 'Smarter', 'Better'];
+let wIdx = 0, cIdx = 0, deleting = false;
+const tw = document.getElementById('typewriter');
+function type() {
+  const word = WORDS[wIdx];
+  if (deleting) { tw.textContent = word.substring(0, cIdx - 1); cIdx--; }
+  else          { tw.textContent = word.substring(0, cIdx + 1); cIdx++; }
+  if (!deleting && cIdx === word.length) { deleting = true; setTimeout(type, 2000); return; }
+  if (deleting && cIdx === 0) { deleting = false; wIdx = (wIdx + 1) % WORDS.length; }
+  setTimeout(type, deleting ? 55 : 95);
+}
+type();
+
+// ── Hero parallax state ────────────────────────
+const heroEl    = document.getElementById('hero');
+const phoneWrap = document.getElementById('phone-wrap');
+const b1 = document.getElementById('b1');
+const b2 = document.getElementById('b2');
+const b3 = document.getElementById('b3');
+let heroMX = 0, heroMY = 0;
+
+heroEl.addEventListener('mousemove', e => {
+  const r = heroEl.getBoundingClientRect();
+  heroMX = (e.clientX - r.left) / r.width  - 0.5;
+  heroMY = (e.clientY - r.top)  / r.height - 0.5;
+});
+heroEl.addEventListener('mouseleave', () => { heroMX = 0; heroMY = 0; });
+
+// ── How-it-works phone parallax state ─────────
+const hwPhoneWrap  = document.getElementById('hw-phone-wrap');
+const hwStickyEl   = document.querySelector('.howitworks-sticky');
+let hwMX = 0, hwMY = 0;
+
+if (hwStickyEl) {
+  hwStickyEl.addEventListener('mousemove', e => {
+    const r = hwStickyEl.getBoundingClientRect();
+    hwMX = (e.clientX - r.left) / r.width  - 0.5;
+    hwMY = (e.clientY - r.top)  / r.height - 0.5;
+  });
+  hwStickyEl.addEventListener('mouseleave', () => { hwMX = 0; hwMY = 0; });
+}
+
+// ── RAF: float + scroll + mouse parallax ───────
+// All continuous animation consolidated here to avoid conflicts
+;(function rafTick() {
+  const t  = Date.now() / 1000;
+  const sy = window.scrollY;
+  const vh = window.innerHeight;
+
+  const phoneFloat = Math.sin(t * (Math.PI * 2 / 5)) * 8;
+
+  if (sy < vh * 1.5) {
+    // Hero phone: float + scroll depth + mouse
+    if (phoneWrap) {
+      phoneWrap.style.transform =
+        `translateY(${phoneFloat - sy * 0.12 + heroMY * 10}px) rotate(-2deg) translateX(${heroMX * 14}px)`;
+    }
+    // Badges: each with unique period, scroll, and mouse
+    const f1 = Math.sin(t * (Math.PI * 2 / 5)) * 12;
+    const f2 = Math.sin(t * (Math.PI * 2 / 6)) * 10;
+    const f3 = Math.sin(t * (Math.PI * 2 / 7) + Math.PI) * 12;
+    if (b1) b1.style.transform = `translate(${heroMX * 22}px,${heroMY * 16 + f1 - sy * 0.08}px)`;
+    if (b2) b2.style.transform = `translate(${heroMX * -18}px,${heroMY * 12 + f2 - sy * 0.18}px)`;
+    if (b3) b3.style.transform = `translate(${heroMX * -14}px,${heroMY * -10 + f3 - sy * 0.05}px)`;
+  }
+
+  // How-it-works phone: same float + mouse (no scroll — section is pinned)
+  if (hwPhoneWrap) {
+    hwPhoneWrap.style.transform =
+      `translateY(${phoneFloat + hwMY * 10}px) rotate(-2deg) translateX(${hwMX * 14}px)`;
+  }
+
+  requestAnimationFrame(rafTick);
+}());
+
+// ── Scroll handler ─────────────────────────────
+const nav       = document.getElementById('navbar');
+const hwSection = document.getElementById('howitworks');
+const hwSteps   = document.querySelectorAll('.step');
+const hwFill    = document.querySelector('.steps-progress-fill');
+const hwShots   = document.querySelectorAll('.hw-shot');
+
+function onScroll() {
+  const sy = window.scrollY;
+
+  // Navbar glass
+  nav.classList.toggle('scrolled', sy > 60);
+
+  // Pinned steps activation
+  if (hwSection) {
+    const sectionTop = hwSection.offsetTop;
+    const scrollable = hwSection.offsetHeight - window.innerHeight;
+    const progress   = Math.max(0, Math.min(1, (sy - sectionTop) / scrollable));
+    const activeIdx  = progress < 0.33 ? 0 : progress < 0.66 ? 1 : 2;
+
+    hwSteps.forEach((s, i) => {
+      s.classList.toggle('active', i === activeIdx);
+      s.classList.toggle('done',   i < activeIdx);
+    });
+    hwShots.forEach((s, i) => s.classList.toggle('active', i === activeIdx));
+    if (hwFill) hwFill.style.height = (progress * 100) + '%';
+  }
+}
+window.addEventListener('scroll', onScroll, { passive: true });
+onScroll();
+
+// ── Word-by-word title reveal ──────────────────
+function wrapWords(container) {
+  let idx = 0;
+  function process(node) {
+    if (node.nodeType === 3) {           // text node
+      const text = node.textContent;
+      if (!text.trim()) return;
+      const frag = document.createDocumentFragment();
+      text.split(/(\s+)/).forEach(part => {
+        if (/\S/.test(part)) {
+          const span = document.createElement('span');
+          span.className = 'word';
+          span.style.transitionDelay = `${idx * 0.07}s`;
+          span.textContent = part;
+          idx++;
+          frag.appendChild(span);
+        } else {
+          frag.appendChild(document.createTextNode(part));
+        }
+      });
+      node.parentNode.replaceChild(frag, node);
+    } else if (node.nodeType === 1) {   // element node
+      if (node.id === 'typewriter' || node.classList.contains('cursor-blink')) return;
+      [...node.childNodes].forEach(process);
+    }
+  }
+  [...container.childNodes].forEach(process);
+}
+
+const titleObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('words-visible');
+      titleObs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.15 });
+
+// Hero title fires immediately (above the fold)
+const heroTitle = document.querySelector('.hero-title');
+if (heroTitle) {
+  heroTitle.style.opacity  = '1';
+  heroTitle.style.transform = 'none';
+  heroTitle.classList.remove('reveal');
+  wrapWords(heroTitle);
+  setTimeout(() => heroTitle.classList.add('words-visible'), 80);
+}
+
+// All section titles use word reveal
+document.querySelectorAll('.section-title').forEach(el => {
+  el.style.opacity  = '1';
+  el.style.transform = 'none';
+  el.classList.remove('reveal', 'reveal-l', 'reveal-r');
+  wrapWords(el);
+  titleObs.observe(el);
+});
+
+// ── Standard scroll reveal (non-title elements) ─
+const revealAll = document.querySelectorAll('.reveal,.reveal-l,.reveal-r');
+const revealObs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('on'); });
+}, { threshold: 0.1 });
+revealAll.forEach(el => revealObs.observe(el));
+
+// ── Counter animation ──────────────────────────
+const counters = document.querySelectorAll('.counter');
+const counterObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (!e.isIntersecting || e.target.dataset.done) return;
+    e.target.dataset.done = '1';
+    const target = +e.target.dataset.target;
+    let start = null;
+    const step = ts => {
+      if (!start) start = ts;
+      const p = Math.min((ts - start) / 1400, 1);
+      e.target.textContent = Math.round((1 - Math.pow(1 - p, 3)) * target);
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
+}, { threshold: 0.5 });
+counters.forEach(c => counterObs.observe(c));
+
+// ── Spotlight (feature cards) ──────────────────
+document.querySelectorAll('.feature-card').forEach(card => {
+  const sp = card.querySelector('.spotlight');
+  card.addEventListener('mousemove', e => {
+    const r = card.getBoundingClientRect();
+    sp.style.background = `radial-gradient(350px at ${e.clientX - r.left}px ${e.clientY - r.top}px, rgba(232,149,109,.12), transparent 70%)`;
+  });
+  card.addEventListener('mouseleave', () => { sp.style.background = ''; });
+});
+
+// ── 3D card tilt ───────────────────────────────
+function add3DTilt(selector, maxDeg) {
+  document.querySelectorAll(selector).forEach(card => {
+    card.addEventListener('mousemove', e => {
+      const r  = card.getBoundingClientRect();
+      const nx = (e.clientX - r.left - r.width  / 2) / (r.width  / 2);
+      const ny = (e.clientY - r.top  - r.height / 2) / (r.height / 2);
+      card.style.transition = 'transform 0.1s ease-out';
+      card.style.transform  =
+        `perspective(1000px) rotateX(${ny * -maxDeg}deg) rotateY(${nx * maxDeg}deg) translateZ(10px) translateY(-8px)`;
+    });
+    card.addEventListener('mouseleave', () => {
+      card.style.transition = 'transform 0.55s cubic-bezier(.34,1.56,.64,1)';
+      card.style.transform  = '';
+      setTimeout(() => { card.style.transition = ''; }, 550);
+    });
+  });
+}
+add3DTilt('.feature-card', 8);
+add3DTilt('.price-card',   6);
+add3DTilt('.phase-card',   7);
+add3DTilt('.testi-card',   6);
+
+// ── Sticky download bar ────────────────────────
+const stickyDl      = document.getElementById('sticky-dl');
+const stickyDlClose = document.getElementById('sticky-dl-close');
+let stickyDismissed = false;
+
+function updateStickyBar() {
+  if (stickyDismissed) return;
+  const heroHeight = document.getElementById('hero').offsetHeight;
+  stickyDl.classList.toggle('visible', window.scrollY > heroHeight * 0.8);
+}
+window.addEventListener('scroll', updateStickyBar, { passive: true });
+
+stickyDlClose.addEventListener('click', () => {
+  stickyDismissed = true;
+  stickyDl.classList.remove('visible');
+});
+
+// ── Hamburger / mobile menu ────────────────────
+const hamburger  = document.getElementById('nav-hamburger');
+const mobileMenu = document.getElementById('mobile-menu');
+
+function closeMobileMenu() {
+  hamburger.classList.remove('open');
+  mobileMenu.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+hamburger.addEventListener('click', () => {
+  const opening = !mobileMenu.classList.contains('open');
+  hamburger.classList.toggle('open');
+  mobileMenu.classList.toggle('open');
+  document.body.style.overflow = opening ? 'hidden' : '';
+});
+
+// Close on any mobile link tap
+mobileMenu.querySelectorAll('a').forEach(a => {
+  a.addEventListener('click', closeMobileMenu);
+});
+
+// ── Magnetic buttons ───────────────────────────
+document.querySelectorAll('.magnetic').forEach(btn => {
+  btn.addEventListener('mousemove', e => {
+    const r = btn.getBoundingClientRect();
+    btn.style.transform = `translate(${(e.clientX - r.left - r.width / 2) * 0.18}px,${(e.clientY - r.top - r.height / 2) * 0.18}px)`;
+  });
+  btn.addEventListener('mouseleave', () => {
+    btn.style.transition = 'transform .5s cubic-bezier(.34,1.56,.64,1)';
+    btn.style.transform  = '';
+    setTimeout(() => { btn.style.transition = ''; }, 500);
+  });
+});
+</script>
+</body>
+</html>

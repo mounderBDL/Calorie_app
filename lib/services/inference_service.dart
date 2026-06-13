@@ -5,7 +5,7 @@ import 'package:tflite_flutter/tflite_flutter.dart';
 import '../models/models.dart';
 
 class InferenceService {
-  static const int   inputSize  = 224;
+  static const int   inputSize  = 384;
   static const int   topK       = 3;
 
   Interpreter?    _interpreter;

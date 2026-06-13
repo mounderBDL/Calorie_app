@@ -6,7 +6,14 @@
       "Bash(flutter analyze *)",
       "Bash(flutter build *)",
       "Bash(flutter clean *)",
-      "Bash(dart run *)"
+      "Bash(dart run *)",
+      "Bash(mkdir -p \"c:/Users/MKT/OneDrive/Desktop/flutter_application_1/landing_page\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\MKT\\\\OneDrive\\\\Desktop\\\\flutter_application_1\" -Recurse -Directory)",
+      "Bash(Select-Object FullName)",
+      "Bash(Sort-Object FullName)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\MKT\\OneDrive\\Desktop\\flutter_application_1"
     ]
   }
 }
